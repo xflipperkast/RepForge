@@ -6,6 +6,7 @@ struct NextTodayView: View {
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
     @Query(sort: \WorkoutTemplate.createdAt, order: .reverse) private var templates: [WorkoutTemplate]
     @State private var current: WorkoutSession?
+    @State private var pendingTemplate: WorkoutTemplate?
     @State private var showTemplates = false
     @State private var showStudio = false
     @State private var showSettings = false
@@ -109,14 +110,19 @@ struct NextTodayView: View {
             .sheet(isPresented: $showPrograms) {
                 TrainingHubView()
             }
-            .sheet(isPresented: $showTemplates) {
+            .sheet(isPresented: $showTemplates, onDismiss: {
+                if let pendingTemplate {
+                    self.pendingTemplate = nil
+                    startTemplate(pendingTemplate)
+                }
+            }) {
                 NavigationStack {
                     ScrollView {
                         LazyVStack(spacing: 12) {
                             ForEach(templates) { template in
                                 Button {
+                                    pendingTemplate = template
                                     showTemplates = false
-                                    startTemplate(template)
                                 } label: {
                                     NextLinkRow(symbol: "play.rectangle.fill",
                                                 title: template.name,
