@@ -5739,17 +5739,6 @@ struct SwipeDeleteContainer<Content: View>: View {
     let onDelete: () -> Void
     let content: Content
 
-    @State private var dragOffset: CGFloat = 0
-    @State private var restingOffset: CGFloat = 0
-    @State private var dragAxis: SwipeAxis?
-
-    private enum SwipeAxis {
-        case horizontal
-        case vertical
-    }
-
-    private let deleteWidth: CGFloat = 82
-
     init(
         canDelete: Bool,
         onDelete: @escaping () -> Void,
@@ -5761,79 +5750,25 @@ struct SwipeDeleteContainer<Content: View>: View {
     }
 
     var body: some View {
-        ZStack(alignment: .trailing) {
+        VStack(alignment: .trailing, spacing: 4) {
             if canDelete {
-                Button(role: .destructive) {
-                    Haptics.light()
-                    onDelete()
-                } label: {
-                    VStack(spacing: 4) {
-                        Image(systemName: "trash.fill")
-                        Text(L10n.text("Delete", "Verwijder"))
-                            .font(.caption2.bold())
+                Menu {
+                    Button(role: .destructive) {
+                        Haptics.light()
+                        onDelete()
+                    } label: {
+                        Label(L10n.text("Delete interval", "Interval verwijderen"), systemImage: "trash")
                     }
-                    .foregroundStyle(.white)
-                    .frame(width: deleteWidth)
-                    .frame(maxHeight: .infinity)
-                    .background(Color.red)
+                } label: {
+                    Label(L10n.text("More actions", "Meer acties"), systemImage: "ellipsis")
+                        .font(.caption)
+                        .foregroundStyle(RFTheme.muted)
+                        .frame(minHeight: 36)
                 }
             }
-
             content
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RFTheme.surface.opacity(0.001))
-                .offset(x: dragOffset)
-                .contentShape(Rectangle())
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 14)
-                        .onChanged { value in
-                            guard canDelete else { return }
-                            let horizontal = value.translation.width
-                            let vertical = value.translation.height
-
-                            if dragAxis == nil,
-                               max(abs(horizontal), abs(vertical)) > 10 {
-                                dragAxis = abs(horizontal) > abs(vertical) * 1.20 ? .horizontal : .vertical
-                            }
-
-                            guard dragAxis == .horizontal else { return }
-                            dragOffset = min(0, max(-deleteWidth * 1.5, restingOffset + horizontal))
-                        }
-                        .onEnded { _ in
-                            defer { dragAxis = nil }
-                            guard canDelete, dragAxis == .horizontal else { return }
-
-                            if dragOffset < -(deleteWidth * 1.15) {
-                                withAnimation(.easeOut(duration: 0.16)) {
-                                    dragOffset = -420
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
-                                    Haptics.light()
-                                    onDelete()
-                                    dragOffset = 0
-                                    restingOffset = 0
-                                }
-                            } else if dragOffset < -(deleteWidth * 0.36) {
-                                withAnimation(.snappy) {
-                                    dragOffset = -deleteWidth
-                                    restingOffset = -deleteWidth
-                                }
-                            } else {
-                                withAnimation(.snappy) {
-                                    dragOffset = 0
-                                    restingOffset = 0
-                                }
-                            }
-                        }
-                )
         }
         .frame(maxWidth: .infinity)
-        .clipShape(RoundedRectangle(cornerRadius: 14))
-        .onAppear {
-            dragOffset = 0
-            restingOffset = 0
-            dragAxis = nil
-        }
     }
 }
 
@@ -5897,196 +5832,146 @@ struct WorkoutSetRow: View {
     let onDelete: () -> Void
 
     @State private var showSetOptions = false
-    @State private var dragOffset: CGFloat = 0
-    @State private var restingOffset: CGFloat = 0
-    @State private var dragAxis: SwipeAxis?
-
-    private enum SwipeAxis {
-        case horizontal
-        case vertical
-    }
-
-    private let deleteWidth: CGFloat = 78
 
     var body: some View {
-        ZStack(alignment: .trailing) {
-            if canDelete {
-                Button(role: .destructive) {
-                    withAnimation(.snappy) {
-                        dragOffset = 0
-                        restingOffset = 0
-                    }
-                    Haptics.light()
-                    onDelete()
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 10) {
+                Button {
+                    showSetOptions = true
                 } label: {
-                    VStack(spacing: 3) {
-                        Image(systemName: "trash.fill")
-                        Text(L10n.text("Delete", "Verwijder"))
-                            .font(.caption2.bold())
+                    HStack(spacing: 6) {
+                        Text(L10n.text("SET", "SET") + " \(set.order + 1)")
+                            .font(.subheadline.weight(.bold))
+                        if set.setType != "working" {
+                            Text(set.setType.uppercased())
+                                .font(.system(size: 9, weight: .bold))
+                                .foregroundStyle(RFTheme.accent)
+                        }
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(RFTheme.muted)
                     }
-                    .foregroundStyle(.white)
-                    .frame(width: deleteWidth, height: 44)
-                    .background(Color.red)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .frame(minHeight: 44, alignment: .leading)
                 }
-                .accessibilityLabel(L10n.text("Delete set \(set.order + 1)", "Set \(set.order + 1) verwijderen"))
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 3)
+
+                Menu {
+                    Button {
+                        showSetOptions = true
+                    } label: {
+                        Label(L10n.text("Set options", "Setopties"), systemImage: "slider.horizontal.3")
+                    }
+                    if canDelete {
+                        Button(role: .destructive) {
+                            onDelete()
+                        } label: {
+                            Label(L10n.text("Delete set", "Set verwijderen"), systemImage: "trash")
+                        }
+                    }
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.headline)
+                        .foregroundStyle(RFTheme.muted)
+                        .frame(width: 40, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .accessibilityLabel(L10n.text("More set actions", "Meer setacties"))
+
+                Button {
+                    // Finish any active number edit first so the final digit is persisted.
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                    )
+                    set.completed.toggle()
+                    set.completedAt = set.completed ? .now : nil
+                    if set.completed { Haptics.success() } else { Haptics.light() }
+                    try? context.save()
+                    onCompleted(set.completed)
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
+                            .font(.title3)
+                        Text(set.completed
+                             ? L10n.text("Done", "Klaar")
+                             : L10n.text("Log", "Log"))
+                            .font(.subheadline.weight(.bold))
+                    }
+                    .foregroundStyle(set.completed ? RFTheme.success : RFTheme.accent)
+                    .padding(.horizontal, 12)
+                    .frame(minHeight: 44)
+                    .background(
+                        set.completed ? RFTheme.success.opacity(0.12) : RFTheme.accent.opacity(0.12),
+                        in: RoundedRectangle(cornerRadius: 12)
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(set.completed
+                    ? L10n.text("Unmark completed set", "Voltooide set terugdraaien")
+                    : L10n.text("Complete set", "Set voltooien"))
             }
 
-            rowContent
-                // Keep the swipe hit target without painting a visible full-row
-                // background behind the REPS/completion cells on wider phones.
-                .background(RFTheme.surface.opacity(0.001))
-                .offset(x: dragOffset)
-                .contentShape(Rectangle())
-                .simultaneousGesture(
-                    DragGesture(minimumDistance: 14)
-                        .onChanged { value in
-                            guard canDelete else { return }
-
-                            let horizontal = value.translation.width
-                            let vertical = value.translation.height
-
-                            if dragAxis == nil,
-                               max(abs(horizontal), abs(vertical)) > 10 {
-                                dragAxis = abs(horizontal) > abs(vertical) * 1.20
-                                    ? .horizontal
-                                    : .vertical
-                            }
-
-                            guard dragAxis == .horizontal else { return }
-
-                            let proposed = restingOffset + horizontal
-                            dragOffset = min(0, max(-deleteWidth * 1.45, proposed))
-                        }
-                        .onEnded { _ in
-                            defer { dragAxis = nil }
-                            guard canDelete, dragAxis == .horizontal else { return }
-
-                            if dragOffset < -(deleteWidth * 1.15) {
-                                withAnimation(.easeOut(duration: 0.16)) {
-                                    dragOffset = -360
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.16) {
-                                    Haptics.light()
-                                    onDelete()
-                                    dragOffset = 0
-                                    restingOffset = 0
-                                }
-                            } else if dragOffset < -(deleteWidth * 0.38) {
-                                withAnimation(.snappy) {
-                                    dragOffset = -deleteWidth
-                                    restingOffset = -deleteWidth
-                                }
-                            } else {
-                                withAnimation(.snappy) {
-                                    dragOffset = 0
-                                    restingOffset = 0
-                                }
-                            }
-                        }
+            HStack(spacing: 10) {
+                entryField(
+                    title: AppPreferences.weightLabel.uppercased(),
+                    value: Binding(
+                        get: { AppPreferences.displayWeight(set.weightKg) },
+                        set: { set.weightKg = AppPreferences.storedWeightKg($0) }
+                    ),
+                    integerOnly: false
                 )
-                .onTapGesture {
-                    if restingOffset != 0 {
-                        withAnimation(.snappy) {
-                            dragOffset = 0
-                            restingOffset = 0
-                        }
-                    }
-                }
+                entryField(
+                    title: L10n.text("REPS", "REPS"),
+                    value: Binding(
+                        get: { Double(set.reps) },
+                        set: { set.reps = max(0, Int($0.rounded())) }
+                    ),
+                    integerOnly: true
+                )
+            }
+
+            if AppPreferences.showPreviousSets, let previous {
+                Label(
+                    L10n.text("Previous", "Vorig") + ": " +
+                    AppPreferences.displayWeight(previous.0).formatted(
+                        .number.precision(.fractionLength(0...2))
+                    ) + " " + AppPreferences.weightLabel + " × \(previous.1)",
+                    systemImage: "clock.arrow.circlepath"
+                )
+                .font(.caption2)
+                .foregroundStyle(RFTheme.muted)
+            }
         }
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            set.completed ? RFTheme.success.opacity(0.075) : RFTheme.raised.opacity(0.65),
+            in: RoundedRectangle(cornerRadius: 16)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(set.completed ? RFTheme.success.opacity(0.25) : RFTheme.cardBorder)
+        )
         .sheet(isPresented: $showSetOptions) {
             SetOptionsView(set: set)
         }
     }
 
-    private func setTypeShort(_ type: String) -> String {
-        switch type {
-        case "warmup": return "WU"
-        case "drop": return "DROP"
-        case "failure": return "FAIL"
-        default: return ""
+    private func entryField(
+        title: String, value: Binding<Double>, integerOnly: Bool
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(title)
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundStyle(RFTheme.muted)
+
+            DoneNumberField(value: value, integerOnly: integerOnly, placeholder: "0")
+                .frame(height: 48)
+                .background(RFTheme.field, in: RoundedRectangle(cornerRadius: 11))
         }
-    }
-
-    private var rowContent: some View {
-        HStack(spacing: 8) {
-            Button {
-                showSetOptions = true
-            } label: {
-                VStack(spacing: 1) {
-                    Text("\(set.order + 1)")
-                        .font(.headline)
-                    if set.setType != "working" {
-                        Text(setTypeShort(set.setType))
-                            .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(RFTheme.accent)
-                    }
-                }
-                .frame(width: 42, height: 42)
-                .background(RFTheme.field)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-            }
-            .buttonStyle(.plain)
-
-            if AppPreferences.showPreviousSets {
-                Text(previous.map {
-                    "\(AppPreferences.displayWeight($0.0).formatted(.number.precision(.fractionLength(0...2)))) × \($0.1)"
-                } ?? "—")
-                    .font(.caption)
-                    .foregroundStyle(RFTheme.muted)
-                    .frame(maxWidth: .infinity)
-            }
-
-            DoneNumberField(
-                value: Binding(
-                    get: { AppPreferences.displayWeight(set.weightKg) },
-                    set: { set.weightKg = AppPreferences.storedWeightKg($0) }
-                ),
-                integerOnly: false,
-                placeholder: "0"
-            )
-            .frame(width: 76, height: 42)
-            .background(RFTheme.field)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            DoneNumberField(
-                value: Binding(
-                    get: { Double(set.reps) },
-                    set: { set.reps = max(0, Int($0.rounded())) }
-                ),
-                integerOnly: true,
-                placeholder: "0"
-            )
-            .frame(width: 64, height: 42)
-            .background(RFTheme.field)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-
-            Button {
-                set.completed.toggle()
-                set.completedAt = set.completed ? .now : nil
-                if set.completed { Haptics.success() } else { Haptics.light() }
-                try? context.save()
-                onCompleted(set.completed)
-            } label: {
-                Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                    .foregroundStyle(set.completed ? RFTheme.success : RFTheme.muted)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .buttonStyle(.plain)
-            .frame(width: 42, height: 42)
-            .background(set.completed ? RFTheme.success.opacity(0.11) : RFTheme.field)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(
-                        set.completed ? RFTheme.success.opacity(0.25) : Color.clear,
-                        lineWidth: 1
-                    )
-            )
-        }
-        .frame(height: 44)
+        .frame(maxWidth: .infinity)
     }
 }
 
