@@ -67,6 +67,7 @@ struct NextTodayView: View {
 
                     NavigationLink {
                         MuscleIntelligenceScreen()
+                            .toolbar(.visible, for: .navigationBar)
                     } label: {
                         NextLinkRow(symbol: "figure.strengthtraining.traditional",
                                     title: L10n.text("Body intelligence", "Spierinzichten"),
