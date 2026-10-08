@@ -260,55 +260,74 @@ struct NextNavigation: View {
     @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 2) {
-                ForEach(NextRoute.allCases) { route in
-                let selected = selection == route.rawValue
-                Button {
-                    if !reduceMotion {
-                        withAnimation(.easeInOut(duration: 0.18)) { selection = route.rawValue }
-                    } else { selection = route.rawValue }
-                    Haptics.light()
-                } label: {
-                    VStack(spacing: 5) {
-                        Image(systemName: route.icon)
-                            .font(.system(size: 19, weight: selected ? .bold : .medium))
-                            .frame(height: 23)
-                        Text(route.label)
-                            .font(.caption2.weight(selected ? .heavy : .medium))
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                    }
-                    .foregroundStyle(selected ? Color.black : NextStyle.muted)
-                    .frame(maxWidth: .infinity)
-                    .frame(minWidth: typeSize.isAccessibilitySize ? 95 : 0)
-                    .frame(minHeight: 51)
-                    .background {
-                        if selected {
-                            RoundedRectangle(cornerRadius: 18)
-                                .fill(NextStyle.electric)
+        Group {
+            if typeSize.isAccessibilitySize {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 4) {
+                        ForEach(NextRoute.allCases) { route in
+                            tabButton(route)
+                                .frame(minWidth: 103)
                         }
                     }
-                    .contentShape(Rectangle())
+                    .padding(6)
                 }
-                .buttonStyle(.plain)
-                .accessibilityLabel(route.label)
-                .accessibilityAddTraits(selected ? .isSelected : [])
-                .accessibilityHint(L10n.text("Switch tab", "Wissel tab"))
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                HStack(spacing: 2) {
+                    ForEach(NextRoute.allCases) { route in
+                        tabButton(route)
+                    }
                 }
+                .padding(6)
             }
-            .frame(maxWidth: typeSize.isAccessibilitySize ? nil : .infinity)
         }
-        .scrollBounceBehavior(.basedOnSize)
-        .padding(6)
         .background(NextStyle.panel, in: RoundedRectangle(cornerRadius: 24))
         .overlay {
             RoundedRectangle(cornerRadius: 24)
-                .stroke(RFTheme.cardBorder).allowsHitTesting(false)
+                .stroke(RFTheme.cardBorder)
+                .allowsHitTesting(false)
         }
         .padding(.horizontal, 13)
         .padding(.top, 6)
         .padding(.bottom, 3)
         .background(.ultraThinMaterial)
+    }
+
+    private func tabButton(_ route: NextRoute) -> some View {
+        let selected = selection == route.rawValue
+        return Button {
+            if reduceMotion {
+                selection = route.rawValue
+            } else {
+                withAnimation(.easeInOut(duration: 0.18)) {
+                    selection = route.rawValue
+                }
+            }
+            Haptics.light()
+        } label: {
+            VStack(spacing: 5) {
+                Image(systemName: route.icon)
+                    .font(.system(size: 19, weight: selected ? .bold : .medium))
+                    .frame(height: 23)
+                Text(route.label)
+                    .font(.caption2.weight(selected ? .heavy : .medium))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+            }
+            .foregroundStyle(selected ? Color.black : NextStyle.muted)
+            .frame(maxWidth: .infinity)
+            .frame(minHeight: 51)
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(NextStyle.electric)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(route.label)
+        .accessibilityAddTraits(selected ? .isSelected : [])
+        .accessibilityHint(L10n.text("Switch tab", "Wissel tab"))
     }
 }
