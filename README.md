@@ -145,37 +145,42 @@ RepForge currently includes:
 - Multiple text-size options
 - Haptics and workout-behavior preferences
 
-## Training experience
+## RepForge 0.3 — Arena rebuild
 
-### Home and motivation
+RepForge 0.3 replaces the old five-tab/Next presentation with a new, purpose-built UI. The original **blue metallic dumbbell R** icon has been restored.
 
-The main navigation is **Train / Plans / Exercises / History / Profile**. Settings live in the Profile toolbar.
+### Navigation and ownership
 
-- Real workout-history-based XP and level progression. Points are earned from completed sessions and set entries, not manual check-ins.
-- Milestone cards and weekly consistency streaks derived from stored training history; no new account or persistent progression schema.
-- An interactive, 13-week session-activity heatmap and today's anatomical muscle activation preview.
-- During a workout, the live anatomical heatmap illuminates muscles as sets are logged.
-- Workout summaries display earned XP, newly earned milestones and a workout-specific muscle map.
+- **Dashboard / Arena** — immediate workout launch/resume, workout-history-driven level and streak, activity heatmap, muscle snapshot, and your next training.
+- **Studio** — curated sessions, timed multi-day splits, custom routines, machine and exercise search, and the independent editable three-week program. Every plan can start an existing SwiftData-compatible workout.
+- **Journey / Atlas** — anatomy-driven training-load and recovery visualizations, full activity calendar, milestones, recent sessions, and detailed history.
+- **Dedicated Start button** — visible in the bottom dock; choose an empty workout, personal template, curated plan, or scheduled session.
+- **Athlete control center** — profile, measurements, gyms, settings, imports, backup/export, and integrations.
 
-### Workout and training-plan library
+### Entirely new workout UI
 
-**Plans** is a separate area containing 28 goal-oriented training examples, six multi-session splits and the original, editable three-week program.
+- **One exercise at a time** with explicit queue/jump controls, not an overfull swipe-enabled table.
+- Weight and rep fields staged until edit completion to avoid a SwiftData write for every digit.
+- Strength set logging and cardio interval metrics, previous-set values, one-tap copying, warm-ups, RPE, RIR, notes, sets, and per-exercise rest configuration.
+- Rest timer runs in a separate view with iOS Live Activity and notifications; no whole-workout view invalidation on every timer tick.
+- Completion shows actual earned XP and the anatomy of the trained muscles; advanced summaries and PR analysis remain available.
 
-- Filter ready-made workouts by goal or experience level.
-- Review exercise order, prescribed sets, rep ranges, optional cues and estimated training time.
-- Start immediately, save a session as a custom template or schedule it for later.
-- The original three-week program retains its saved edits, sharing, scheduling and manual-reset functionality.
-- Estimated time includes warm-up, work, suggested rest and station transitions. Equipment availability and actual duration will vary.
+### App architecture
 
-The workouts are original general-purpose examples and are **not represented as certified professional prescriptions**, medical guidance or customized coaching. For general training guidance see the [2026 ACSM resistance-training position stand](https://acsm.org/science-spotlight-acsm-releases-new-position-stand-on-resistance-training/) and [NSCA training-frequency guidance](https://www.nsca.com/education/articles/kinetic-select/determination-of-resistance-training-frequency/).
+The old 10,000-line mixed SwiftUI entrypoint has been separated into:
 
-### Muscle intelligence
+- `Sources/Core/RepForgeEngine.swift` — unmodified persistence contracts, models, exercise catalog, metrics, media and service helpers.
+- `Sources/RepForgeApp.swift` — lean app and link-routing entrypoint.
+- `Sources/V3*.swift` — the new independent product screens and workout flow.
+- `Sources/Legacy/AdvancedFeatures.swift` — less-frequent controls retained for feature and import/export compatibility while their core functions stay available.
 
-- Front/back anatomical heatmap of effective muscle sets for this week, last week or the previous 28 days.
-- Toggle to an estimated-recovery view computed from prior sessions.
-- Tap muscle breakdown rows for additional context.
-- The exercise detail page shows primary and assisting muscles anatomically.
-- Recovery is a heuristic inferred from logged sets and elapsed time—not a physiological or medical measurement.
+The obsolete `Sources/Next*.swift` presentation files are removed. Existing bundle identifiers, models and storage paths are unchanged. No destructive migration is performed.
+
+This release aims for minimum 44-point touch controls, system Dynamic Type where feasible, meaningful accessibility labels and reduced-motion-aware effects. The CI device compilation and simulator launch checks help catch regressions, but manual iPhone accessibility, frame pacing and data-restore tests remain necessary.
+
+### Training and recovery
+
+The **28 workouts** and **six splits** are general educational examples, not certified individual prescriptions. Time estimates include warm-up, work, rest and equipment changes. The recovery map is a heuristic based on logged workouts, **not a physiological measurement**.
 
 ## Data and privacy
 
