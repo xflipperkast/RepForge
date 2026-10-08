@@ -105,11 +105,53 @@ struct V3Panel<Content: View>: View {
                     .fill(highlighted ? V3.panelGradient : LinearGradient(
                         colors: [V3.card, V3.card],
                         startPoint: .top, endPoint: .bottom))
+                    .overlay(alignment: .topTrailing) {
+                        if highlighted {
+                            V3OrbitalArtwork()
+                                .offset(x: 67, y: -61)
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: V3.radius))
                     .overlay {
                         RoundedRectangle(cornerRadius: V3.radius)
                             .stroke(V3.border, lineWidth: 1)
                     }
+                    .allowsHitTesting(false)
             }
+    }
+}
+
+/// Lightweight dimensional accent, rendered as vector geometry instead of
+/// continuous blur animations (accessibility and frame pacing stay predictable).
+struct V3OrbitalArtwork: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(V3.accent.opacity(0.22), lineWidth: 1.3)
+                .frame(width: 224, height: 224)
+            Circle()
+                .trim(from: 0.08, to: 0.70)
+                .stroke(
+                    AngularGradient(
+                        colors: [V3.accent.opacity(0.05), V3.accent.opacity(0.35),
+                                 V3.energy.opacity(0.5), V3.accent.opacity(0.05)],
+                        center: .center
+                    ),
+                    style: StrokeStyle(lineWidth: 10, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-35))
+                .frame(width: 181, height: 181)
+            Circle()
+                .stroke(V3.accent.opacity(0.15),
+                        style: StrokeStyle(lineWidth: 1, dash: [5, 8]))
+                .frame(width: 138, height: 138)
+            Text("R")
+                .font(.system(size: 94, weight: .black, design: .rounded))
+                .italic()
+                .foregroundStyle(V3.accent.opacity(0.19))
+        }
+        .frame(width: 244, height: 244)
+        .accessibilityHidden(true)
     }
 }
 
