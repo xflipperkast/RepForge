@@ -285,6 +285,26 @@ struct V3NavigationDock: View {
     ]
 
     var body: some View {
+        Group {
+            if dynamicType.isAccessibilitySize {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    dockContent
+                        .frame(minWidth: 450)
+                }
+                .scrollBounceBehavior(.basedOnSize)
+            } else {
+                dockContent
+            }
+        }
+        .padding(7)
+        .background(V3.card, in: RoundedRectangle(cornerRadius: 25))
+        .overlay(RoundedRectangle(cornerRadius: 25).stroke(V3.border))
+        .padding(.horizontal, 13)
+        .padding(.bottom, 5)
+        .background(.ultraThinMaterial)
+    }
+
+    private var dockContent: some View {
         HStack(spacing: 4) {
             ForEach(routes, id: \.0) { item in
                 Button {
@@ -318,11 +338,6 @@ struct V3NavigationDock: View {
             .buttonStyle(V3TapStyle())
             .accessibilityLabel(L10n.text("Start or resume workout", "Training starten of hervatten"))
         }
-        .padding(7)
-        .background(V3.card, in: RoundedRectangle(cornerRadius: 25))
-        .overlay(RoundedRectangle(cornerRadius: 25).stroke(V3.border))
-        .padding(.horizontal, 13)
-        .padding(.bottom, 5)
-        .background(.ultraThinMaterial)
     }
+
 }
