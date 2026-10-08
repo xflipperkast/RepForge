@@ -216,7 +216,7 @@ enum RFTheme {
         case "forest": return Color(red: 0.030, green: 0.060, blue: 0.035)
         case "slate": return Color(red: 0.045, green: 0.052, blue: 0.065)
         case "neon": return Color(red: 0.018, green: 0.028, blue: 0.024)
-        default: return Color(red: 0.055, green: 0.070, blue: 0.078)
+        default: return Color(red: 0.035, green: 0.044, blue: 0.057)
         }
     }
 
@@ -240,7 +240,7 @@ enum RFTheme {
         case "forest": return Color(red: 0.060, green: 0.120, blue: 0.070)
         case "slate": return Color(red: 0.095, green: 0.110, blue: 0.135)
         case "neon": return Color(red: 0.035, green: 0.085, blue: 0.060)
-        default: return Color(red: 0.105, green: 0.135, blue: 0.150)
+        default: return Color(red: 0.085, green: 0.100, blue: 0.125)
         }
     }
 
@@ -264,7 +264,7 @@ enum RFTheme {
         case "forest": return Color(red: 0.085, green: 0.165, blue: 0.095)
         case "slate": return Color(red: 0.135, green: 0.155, blue: 0.185)
         case "neon": return Color(red: 0.050, green: 0.130, blue: 0.085)
-        default: return Color(red: 0.140, green: 0.175, blue: 0.190)
+        default: return Color(red: 0.120, green: 0.143, blue: 0.170)
         }
     }
 
@@ -288,7 +288,7 @@ enum RFTheme {
         case "forest": return Color(red: 0.32, green: 0.78, blue: 0.38)
         case "slate": return Color(red: 0.64, green: 0.72, blue: 0.84)
         case "neon": return Color(red: 0.30, green: 1.0, blue: 0.54)
-        default: return Color(red: 0.18, green: 0.63, blue: 1.0)
+        default: return Color(red: 0.81, green: 0.97, blue: 0.34)
         }
     }
 
@@ -2733,24 +2733,27 @@ struct RootView: View {
     @AppStorage("measurementSystem") private var measurementSystem = "metric"
 
     var body: some View {
-        TabView(selection: $tab) {
-            StartWorkoutView()
-                .tabItem { Label(L10n.text("Train", "Trainen"), systemImage: "bolt.fill") }
-                .tag(0)
-            TrainingHubView()
-                .tabItem { Label(L10n.text("Plans", "Schema's"), systemImage: "square.stack.3d.up.fill") }
-                .tag(1)
-            ExerciseLibraryView()
-                .tabItem { Label(L10n.exercises, systemImage: "dumbbell.fill") }
-                .tag(2)
-            HistoryView()
-                .tabItem { Label(L10n.history, systemImage: "clock.arrow.circlepath") }
-                .tag(3)
-            ProfileView()
-                .tabItem { Label(L10n.profile, systemImage: "person.crop.circle.fill") }
-                .tag(4)
+        ZStack {
+            Group {
+                switch tab {
+                case 1:
+                    NextProgramsView()
+                case 2:
+                    NextExploreView()
+                case 3:
+                    NextProgressView()
+                case 4:
+                    NextAthleteView()
+                default:
+                    NextTodayView()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .tint(RFTheme.accent)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            NextNavigation(selection: $tab)
+        }
+        .tint(NextStyle.electric)
         .preferredColorScheme(preferredColorScheme)
         .dynamicTypeSize(preferredTextSize)
         .id("\(appLanguage)-\(appearance)-\(themePreset)-\(textSize)-\(measurementSystem)-\(layoutStyle)")
