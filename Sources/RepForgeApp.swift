@@ -4298,6 +4298,7 @@ struct ActiveWorkoutView: View {
                     RestTimerDock(
                         endDate: endDate,
                         exerciseName: restExerciseName,
+                        totalSeconds: max(restOriginal, 1),
                         onAdjust: { adjustRest(by: $0) },
                         onReset: { resetRest() },
                         onSkip: { stopRest() }
