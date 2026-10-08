@@ -216,7 +216,7 @@ struct NextProgramsView: View {
     }
 
     private func workoutDetail(_ workout: CoachWorkout) -> some View {
-        CoachWorkoutDetailView(
+        NextWorkoutBlueprintView(
             workout: workout,
             onStart: { start(workout) },
             onSave: {
