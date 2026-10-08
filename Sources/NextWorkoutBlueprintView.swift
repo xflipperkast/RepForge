@@ -60,6 +60,7 @@ struct NextWorkoutBlueprintView: View {
         .nextCanvas()
         .navigationTitle(workout.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             actionDock
         }
