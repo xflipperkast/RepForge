@@ -7055,6 +7055,7 @@ struct SessionDetailView: View {
         .background(RFTheme.bg)
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
@@ -7742,6 +7743,7 @@ struct ExerciseDetailView: View {
         .nextCanvas()
         .navigationTitle(exercise.name)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 
     @ViewBuilder
