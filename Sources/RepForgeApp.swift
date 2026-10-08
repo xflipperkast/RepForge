@@ -5874,15 +5874,37 @@ struct WorkoutSetRow: View {
             }
 
             if AppPreferences.showPreviousSets, let previous {
-                Label(
-                    L10n.text("Previous", "Vorig") + ": " +
-                    AppPreferences.displayWeight(previous.0).formatted(
-                        .number.precision(.fractionLength(0...2))
-                    ) + " " + AppPreferences.weightLabel + " × \(previous.1)",
-                    systemImage: "clock.arrow.circlepath"
-                )
-                .font(.caption2)
-                .foregroundStyle(RFTheme.muted)
+                HStack(spacing: 6) {
+                    Label(
+                        L10n.text("Previous", "Vorig") + ": " +
+                        AppPreferences.displayWeight(previous.0).formatted(
+                            .number.precision(.fractionLength(0...2))
+                        ) + " " + AppPreferences.weightLabel + " × \(previous.1)",
+                        systemImage: "clock.arrow.circlepath"
+                    )
+                    .font(.caption2)
+                    .foregroundStyle(RFTheme.muted)
+
+                    Spacer(minLength: 0)
+
+                    if !set.completed {
+                        Button {
+                            set.weightKg = previous.0
+                            set.reps = previous.1
+                            try? context.save()
+                            Haptics.light()
+                        } label: {
+                            Label(L10n.text("Reuse", "Herhaal"), systemImage: "arrow.down.to.line")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(RFTheme.accent)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel(
+                            L10n.text("Copy previous weight and repetitions",
+                                      "Vorig gewicht en herhalingen kopiëren")
+                        )
+                    }
+                }
             }
         }
         .padding(12)
