@@ -5,6 +5,7 @@ import Charts
 struct NextProgressView: View {
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
     @State private var period = 30
+    @State private var showAdvancedHistory = false
     private var finished: [WorkoutSession] { sessions.filter { $0.endedAt != nil } }
     private var scoped: [WorkoutSession] {
         guard let cutoff = Calendar.current.date(byAdding: .day, value: -period, to: .now)
@@ -84,8 +85,8 @@ struct NextProgressView: View {
                         .buttonStyle(NextPressStyle())
                     }
 
-                    NavigationLink {
-                        HistoryView()
+                    Button {
+                        showAdvancedHistory = true
                     } label: {
                         NextLinkRow(
                             symbol: "calendar.badge.clock",
@@ -103,6 +104,9 @@ struct NextProgressView: View {
             }
             .nextCanvas()
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showAdvancedHistory) {
+                HistoryView()
+            }
         }
     }
 
@@ -131,6 +135,8 @@ struct NextAthleteView: View {
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
     @Query(sort: \BodyMeasurement.date, order: .reverse) private var measurements: [BodyMeasurement]
     @State private var showMeasurements = false
+    @State private var showAdvancedProfile = false
+    @State private var showSettings = false
 
     private var profile: UserProfile? { profiles.first }
     private var progress: ForgeProgress { ForgeProgress(sessions: sessions) }
@@ -176,8 +182,8 @@ struct NextAthleteView: View {
                         subtitle: L10n.text("Every existing tool stays available",
                                             "Alle bestaande functies blijven beschikbaar")
                     )
-                    NavigationLink {
-                        ProfileView()
+                    Button {
+                        showAdvancedProfile = true
                     } label: {
                         NextLinkRow(
                             symbol: "person.text.rectangle",
@@ -190,8 +196,8 @@ struct NextAthleteView: View {
                     }
                     .buttonStyle(NextPressStyle())
 
-                    NavigationLink {
-                        SettingsView()
+                    Button {
+                        showSettings = true
                     } label: {
                         NextLinkRow(
                             symbol: "gearshape.2.fill",
@@ -218,6 +224,12 @@ struct NextAthleteView: View {
             }
             .nextCanvas()
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showAdvancedProfile) {
+                ProfileView()
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+            }
             .sheet(isPresented: $showMeasurements) {
                 if let profile { BodyMeasurementEditorView(profile: profile) }
             }
