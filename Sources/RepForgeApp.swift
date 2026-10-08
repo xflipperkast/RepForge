@@ -2723,6 +2723,7 @@ struct RootView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [UserProfile]
     @State private var tab = 0
+    @State private var keyboardVisible = false
     @State private var importMessage: String?
 
     @AppStorage("appLanguage") private var appLanguage = "en"
@@ -2751,7 +2752,19 @@ struct RootView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            NextNavigation(selection: $tab)
+            if !keyboardVisible {
+                NextNavigation(selection: $tab)
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIResponder.keyboardWillShowNotification
+        )) { _ in
+            keyboardVisible = true
+        }
+        .onReceive(NotificationCenter.default.publisher(
+            for: UIResponder.keyboardWillHideNotification
+        )) { _ in
+            keyboardVisible = false
         }
         .tint(NextStyle.electric)
         .preferredColorScheme(preferredColorScheme)
