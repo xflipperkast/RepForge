@@ -1301,7 +1301,6 @@ struct ActiveWorkoutView: View {
     @State private var restExerciseName = ""
     @State private var restEndDate: Date?
     @State private var showWorkoutNote = false
-    @State private var showBodyMap = false
     @State private var draggingExerciseID: UUID?
     @State private var hiddenExerciseIDs: Set<UUID> = []
     @State private var focusMode = false
@@ -1344,34 +1343,11 @@ struct ActiveWorkoutView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVStack(alignment: .leading, spacing: compactWorkoutMode ? 10 : 16) {
+                VStack(alignment: .leading, spacing: compactWorkoutMode ? 10 : 18) {
                     workoutHero
 
-                    if completedEntries > 0 {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showBodyMap.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Image(systemName: "figure.strengthtraining.traditional")
-                                    .foregroundStyle(NextStyle.electric)
-                                Text(L10n.text("Muscle activation", "Spieractivatie"))
-                                    .font(.subheadline.weight(.semibold))
-                                Spacer()
-                                Text(L10n.text("LIVE", "LIVE"))
-                                    .font(.system(size: 10, weight: .heavy))
-                                    .foregroundStyle(NextStyle.electric)
-                                Image(systemName: showBodyMap ? "chevron.up" : "chevron.down")
-                                    .foregroundStyle(NextStyle.muted)
-                            }
-                            .nextSurface(radius: 16)
-                        }
-                        .buttonStyle(.plain)
-                        if showBodyMap {
-                            LiveWorkoutHeatmap(session: session)
-                                .transition(.opacity)
-                        }
+                    if !compactWorkoutMode && completedEntries > 0 {
+                        LiveWorkoutHeatmap(session: session)
                     }
 
                     if showWorkoutNote {
@@ -1410,20 +1386,51 @@ struct ActiveWorkoutView: View {
 
                     exerciseCards
 
-                    NextPrimaryButton(
-                        title: L10n.addExercise,
-                        symbol: "plus"
-                    ) {
+                    Button {
                         pickerIDs = []
                         showExercisePicker = true
+                    } label: {
+                        HStack(spacing: 10) {
+                            ZStack {
+                                Circle()
+                                    .fill(RFTheme.accent.opacity(0.16))
+                                Image(systemName: "plus")
+                                    .font(.headline.bold())
+                                    .foregroundStyle(RFTheme.accent)
+                            }
+                            .frame(width: 34, height: 34)
+
+                            Text(L10n.addExercise)
+                                .font(.headline)
+
+                            Spacer()
+
+                            Image(systemName: "chevron.right")
+                                .foregroundStyle(RFTheme.muted)
+                        }
+                        .padding(14)
+                        .frame(maxWidth: .infinity)
                     }
+                    .buttonStyle(.plain)
+                    .background(RFTheme.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 18))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(RFTheme.cardBorder)
+                    )
                 }
-                .padding(.horizontal, 15)
-                .padding(.top, 22)
+                .padding(RFLayout.pagePadding)
                 .padding(.bottom, restRemaining > 0 ? 14 : 12)
             }
             .scrollDismissesKeyboard(.interactively)
-            .nextCanvas()
+            .background(
+                LinearGradient(
+                    colors: [RFTheme.bg, RFTheme.bg, RFTheme.accent.opacity(0.035)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea()
+            )
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -1544,16 +1551,129 @@ struct ActiveWorkoutView: View {
     }
 
     private var workoutHero: some View {
-        NextWorkoutHeader(
-            session: session,
-            completedSets: completedEntries,
-            totalSets: totalEntries,
-            bpm: heartRateMonitor.bpm,
-            focusEnabled: focusMode,
-            hasNote: !(session.note ?? "").isEmpty,
-            onFinish: { showFinishConfirm = true },
-            onFocus: { focusMode.toggle() },
-            onNote: { showWorkoutNote.toggle() }
+        VStack(alignment: .leading, spacing: 13) {
+            HStack(alignment: .top, spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(RFTheme.accent.opacity(0.14))
+                    Image(systemName: "figure.strengthtraining.traditional")
+                        .font(.title2.bold())
+                        .foregroundStyle(RFTheme.accent)
+                }
+                .frame(width: 52, height: 52)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(session.title)
+                        .font(.title2.bold())
+                        .lineLimit(2)
+
+                    Label(
+                        GymProfileStore.profile(id: session.gymID).name,
+                        systemImage: "mappin.and.ellipse"
+                    )
+                    .font(.caption)
+                    .foregroundStyle(RFTheme.muted)
+                }
+
+                Spacer()
+
+                Button(L10n.finish) {
+                    showFinishConfirm = true
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(RFTheme.success)
+                .font(.subheadline.bold())
+            }
+
+            HStack(spacing: 8) {
+                TimelineView(.periodic(from: .now, by: 1)) { _ in
+                    WorkoutMetricPill(
+                        icon: "clock.fill",
+                        text: durationString(session.duration)
+                    )
+                }
+
+                WorkoutMetricPill(
+                    icon: "checkmark.circle.fill",
+                    text: "\(completedEntries)/\(totalEntries)"
+                )
+
+                if let bpm = heartRateMonitor.bpm {
+                    WorkoutMetricPill(
+                        icon: "heart.fill",
+                        text: "\(bpm) bpm"
+                    )
+                }
+
+                if session.totalCardioDistanceKm > 0 {
+                    WorkoutMetricPill(
+                        icon: "figure.run",
+                        text: "\(AppPreferences.displayDistance(session.totalCardioDistanceKm).formatted(.number.precision(.fractionLength(0...2)))) \(AppPreferences.distanceLabel)"
+                    )
+                }
+
+                Spacer()
+
+                Button {
+                    withAnimation(.snappy) {
+                        focusMode.toggle()
+                    }
+                } label: {
+                    Image(systemName: focusMode ? "scope" : "rectangle.stack.fill")
+                        .font(.caption.bold())
+                        .padding(8)
+                        .background(focusMode ? RFTheme.accent.opacity(0.18) : RFTheme.field.opacity(0.75))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(
+                    focusMode
+                        ? L10n.text("Show all exercises", "Toon alle oefeningen")
+                        : L10n.text("Focus on next exercise", "Focus op volgende oefening")
+                )
+            }
+
+            VStack(spacing: 7) {
+                HStack {
+                    Text(L10n.text("Workout progress", "Trainingsvoortgang"))
+                        .font(.caption.bold())
+                        .foregroundStyle(RFTheme.muted)
+                    Spacer()
+                    Text("\(Int(workoutProgress * 100))%")
+                        .font(.caption.bold())
+                        .foregroundStyle(RFTheme.accent)
+                }
+
+                ProgressView(value: workoutProgress)
+                    .tint(RFTheme.accent)
+                    .scaleEffect(x: 1, y: 1.5)
+            }
+
+            Button {
+                withAnimation(.snappy) {
+                    showWorkoutNote.toggle()
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "note.text")
+                    Text(
+                        (session.note ?? "").isEmpty
+                            ? L10n.text("Add workout note", "Trainingsnotitie toevoegen")
+                            : L10n.text("Workout note added", "Trainingsnotitie toegevoegd")
+                    )
+                        .font(.caption.bold())
+                    Spacer()
+                    Image(systemName: showWorkoutNote ? "chevron.up" : "chevron.down")
+                        .font(.caption)
+                }
+                .foregroundStyle(RFTheme.muted)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(15)
+        .background(RFTheme.surface, in: RoundedRectangle(cornerRadius: 19))
+        .overlay(
+            RoundedRectangle(cornerRadius: 19).stroke(RFTheme.cardBorder)
         )
     }
 
@@ -3249,10 +3369,16 @@ struct WorkoutSummaryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    NextCelebrationHeader(
-                        session: session,
-                        recordCount: prs.count
-                    )
+                    VStack(spacing: 8) {
+                        Image(systemName: prs.isEmpty ? "checkmark.circle.fill" : "trophy.fill")
+                            .font(.system(size: 48))
+                            .foregroundStyle(prs.isEmpty ? RFTheme.success : RFTheme.accent)
+                        Text(L10n.text("Workout Complete", "Training voltooid"))
+                            .font(.largeTitle.bold())
+                        Text(session.title)
+                            .foregroundStyle(RFTheme.muted)
+                    }
+                    .frame(maxWidth: .infinity)
 
                     ForgeSessionRewards(session: session, sessions: sessions)
 
@@ -3406,7 +3532,7 @@ struct WorkoutSummaryView: View {
                 }
                 .padding()
             }
-            .nextCanvas()
+            .background(RFTheme.bg)
             .navigationTitle(L10n.text("Summary", "Samenvatting"))
             .navigationBarTitleDisplayMode(.inline)
         }
@@ -4016,14 +4142,6 @@ struct SessionDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                NextScreenHeader(
-                    eyebrow: L10n.text("SESSION ARCHIVE", "TRAININGSARCHIEF"),
-                    title: session.title,
-                    detail: L10n.text(
-                        "Your performance, preserved.",
-                        "Jouw resultaten, opgeslagen."
-                    )
-                )
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -4187,7 +4305,6 @@ struct SessionDetailView: View {
         .background(RFTheme.bg)
         .navigationTitle(session.title)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button(role: .destructive) {
@@ -4847,17 +4964,7 @@ struct ExerciseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                NextScreenHeader(
-                    eyebrow: exercise.muscle.uppercased() + " / " + exercise.equipment.uppercased(),
-                    title: exercise.name,
-                    detail: L10n.text(
-                        "Technique, working muscles, history and progression.",
-                        "Techniek, spierbelasting, geschiedenis en vooruitgang."
-                    )
-                )
-                .nextSurface(prominent: true)
-
-                Picker(L10n.text("Section", "Onderdeel"), selection: $tab) {
+                Picker("Section", selection: $tab) {
                     Text("Guide").tag(0)
                     Text("History").tag(1)
                     Text("Charts").tag(2)
@@ -4872,10 +4979,9 @@ struct ExerciseDetailView: View {
             }
             .padding()
         }
-        .nextCanvas()
+        .background(RFTheme.bg)
         .navigationTitle(exercise.name)
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(.visible, for: .navigationBar)
     }
 
     @ViewBuilder
