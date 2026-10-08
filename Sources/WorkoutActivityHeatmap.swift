@@ -166,9 +166,10 @@ struct ExerciseTargetHeatmap: View {
     let exercise: ExerciseDefinition
 
     private var intensity: [String: Double] {
-        Dictionary(uniqueKeysWithValues: exercise.detailedMuscles.map {
-            ($0.muscle, min(1, max(0, $0.weight)))
-        })
+        exercise.detailedMuscles.reduce(into: [String: Double]()) { result, contribution in
+            let weight = min(1, max(0, contribution.weight))
+            result[contribution.muscle] = max(result[contribution.muscle] ?? 0, weight)
+        }
     }
 
     var body: some View {
