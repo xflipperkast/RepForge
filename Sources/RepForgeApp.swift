@@ -1142,9 +1142,17 @@ Smith Machine Leg Press|Quadriceps|Machine|squat
         combinedBuiltIn + CustomExerciseStore.load().map { $0.definition }
     }
 
+    private static let builtInLookup: [String: ExerciseDefinition] = {
+        var index = Dictionary(uniqueKeysWithValues: combinedBuiltIn.map { ($0.id, $0) })
+        for exercise in legacyBuiltIn where index[exercise.id] == nil {
+            index[exercise.id] = exercise
+        }
+        return index
+    }()
+
     static func find(_ id: String) -> ExerciseDefinition? {
-        if let visible = all.first(where: { $0.id == id }) { return visible }
-        return legacyBuiltIn.first(where: { $0.id == id })
+        if let builtIn = builtInLookup[id] { return builtIn }
+        return CustomExerciseStore.load().first(where: { $0.id == id })?.definition
     }
 
     static func findByName(_ name: String) -> ExerciseDefinition? {
@@ -4969,31 +4977,32 @@ struct WorkoutExerciseBlock: View {
     private var completedCount: Int { log.sets.filter(\.completed).count }
     private var allCompleted: Bool { !log.sets.isEmpty && completedCount == log.sets.count }
 
-    private var previousLog: ExerciseLog? {
-        Metrics.scopedSessions(sessions, gymID: gymID)
-            .filter { session in
-                session.exercises.contains(where: { $0.exerciseID == log.exerciseID })
-            }
+    @State private var priorLog: ExerciseLog?
+    @State private var priorSets: [(Double, Int)] = []
+    @State private var priorBest: Double = 0
+    @State private var historyLoaded = false
+
+    private var previousLog: ExerciseLog? { priorLog }
+    private var previous: [(Double, Int)] { priorSets }
+    private var best: Double { priorBest }
+
+    // History snapshots are loaded once per exercise instead of scanning the
+    // entire workout database on every keystroke or view invalidation.
+    private func refreshHistorySnapshot() {
+        let past = Metrics.scopedSessions(sessions, gymID: gymID)
+        priorLog = past
+            .filter { session in session.exercises.contains(where: { $0.exerciseID == log.exerciseID }) }
             .max(by: { ($0.endedAt ?? $0.startedAt) < ($1.endedAt ?? $1.startedAt) })?
-            .exercises
-            .first(where: { $0.exerciseID == log.exerciseID })
-    }
-
-    private var previous: [(Double, Int)] {
-        Metrics.previousSets(
-            exerciseID: log.exerciseID,
-            sessions: sessions,
-            gymID: gymID
+            .exercises.first(where: { $0.exerciseID == log.exerciseID })
+        priorSets = priorLog?.sets
+            .filter(\.countsForPR)
+            .sorted(by: { $0.order < $1.order })
+            .map { ($0.weightKg, $0.reps) } ?? []
+        priorBest = Metrics.personalBest(
+            exerciseID: log.exerciseID, sessions: sessions,
+            gymID: gymID, startDate: AppPreferences.prStartDate
         )
-    }
-
-    private var best: Double {
-        Metrics.personalBest(
-            exerciseID: log.exerciseID,
-            sessions: sessions,
-            gymID: gymID,
-            startDate: AppPreferences.prStartDate
-        )
+        historyLoaded = true
     }
 
     private var canCopyPrevious: Bool {
@@ -5052,19 +5061,10 @@ struct WorkoutExerciseBlock: View {
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(
-            LinearGradient(
-                colors: [
-                    RFTheme.surface,
-                    allCompleted ? RFTheme.success.opacity(0.055) : RFTheme.raised.opacity(0.38)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 22))
+        .background(RFTheme.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 19))
         .overlay(
-            RoundedRectangle(cornerRadius: 22)
+            RoundedRectangle(cornerRadius: 19)
                 .stroke(
                     supersetPosition != nil
                         ? RFTheme.accent.opacity(0.55)
@@ -5080,7 +5080,7 @@ struct WorkoutExerciseBlock: View {
                     .padding(.vertical, 14)
             }
         }
-        .shadow(color: Color.black.opacity(0.08), radius: 10, y: 4)
+        .shadow(color: Color.black.opacity(0.035), radius: 5, y: 2)
         .sheet(isPresented: $showOptions) {
             ExerciseLogOptionsView(log: log)
         }
@@ -5100,9 +5100,11 @@ struct WorkoutExerciseBlock: View {
             ))
         }
         .onAppear {
-            if autoCollapseCompleted && allCompleted {
-                isCollapsed = true
-            }
+            if !historyLoaded { refreshHistorySnapshot() }
+            if autoCollapseCompleted && allCompleted { isCollapsed = true }
+        }
+        .onChange(of: log.exerciseID) { _, _ in
+            refreshHistorySnapshot()
         }
         .onChange(of: completedCount) { _, _ in
             if autoCollapseCompleted && allCompleted {
@@ -5133,9 +5135,10 @@ struct WorkoutExerciseBlock: View {
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: 7) {
                             Text(exercise?.name ?? "Exercise")
-                                .font(.headline)
+                                .font(.system(size: 16, weight: .bold, design: .rounded))
                                 .foregroundStyle(.primary)
-                                .lineLimit(1)
+                                .lineLimit(2)
+                                .fixedSize(horizontal: false, vertical: true)
 
                             if let supersetPosition {
                                 Text(supersetPosition)
@@ -5274,28 +5277,7 @@ struct WorkoutExerciseBlock: View {
     }
 
     private var strengthContent: some View {
-        VStack(spacing: 8) {
-            HStack {
-                Text(L10n.text("SET", "SET"))
-                    .frame(width: 42, alignment: .leading)
-
-                if AppPreferences.showPreviousSets {
-                    Text(L10n.text("PREVIOUS", "VORIGE"))
-                        .frame(maxWidth: .infinity)
-                }
-
-                Text(AppPreferences.weightLabel.uppercased())
-                    .frame(width: 76)
-
-                Text(L10n.text("REPS", "REPS"))
-                    .frame(width: 64)
-
-                Image(systemName: "checkmark")
-                    .frame(width: 42)
-            }
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(RFTheme.muted)
-
+        VStack(spacing: 10) {
             ForEach(orderedSets) { set in
                 WorkoutSetRow(
                     set: set,
@@ -5304,9 +5286,7 @@ struct WorkoutExerciseBlock: View {
                     onCompleted: { completed in
                         if completed { onSetCompleted() }
                     },
-                    onDelete: {
-                        removeSet(set)
-                    }
+                    onDelete: { removeSet(set) }
                 )
             }
         }
