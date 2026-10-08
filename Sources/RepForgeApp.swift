@@ -7551,108 +7551,96 @@ struct WorkoutComparisonCard: View {
 struct ExerciseLibraryView: View {
     @State private var search = ""
     @State private var muscle = "All"
+    @State private var equipment = "All"
     @State private var showCustomEditor = false
     @State private var refreshToken = UUID()
     @State private var deleteCandidate: ExerciseDefinition?
 
     private var filtered: [ExerciseDefinition] {
         _ = refreshToken
-        return ExerciseCatalog.all.filter {
-            ExerciseSearch.matches($0, query: search) &&
-            (muscle == "All" || $0.muscle == muscle)
+        return ExerciseCatalog.all.filter { ex in
+            ExerciseSearch.matches(ex, query: search) &&
+            (muscle == "All" || ex.muscle == muscle) &&
+            GymEquipmentFilter.matches(ex, selected: equipment)
         }
     }
 
     var body: some View {
         NavigationStack {
-            List(filtered) { ex in
-                NavigationLink {
-                    ExerciseDetailView(exercise: ex)
-                } label: {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 12).fill(RFTheme.raised)
-                            Image(systemName: icon(for: ex.movement))
-                                .foregroundStyle(RFTheme.accent)
-                                .font(.title2)
-                        }
-                        .frame(width: 52, height: 52)
+            VStack(spacing: 0) {
+                filterPanel
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            HStack(spacing: 6) {
-                                Text(ex.name).font(.headline)
-                                if CustomExerciseStore.isCustom(ex.id) {
-                                    Text(L10n.text("CUSTOM", "EIGEN"))
-                                        .font(.system(size: 8, weight: .bold))
-                                        .padding(.horizontal, 5)
-                                        .padding(.vertical, 2)
-                                        .background(RFTheme.accent.opacity(0.18))
-                                        .foregroundStyle(RFTheme.accent)
-                                        .clipShape(Capsule())
+                HStack {
+                    Text("\(filtered.count) " + L10n.text("exercises", "oefeningen"))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(RFTheme.muted)
+                    Spacer()
+                    if muscle != "All" || equipment != "All" || !search.isEmpty {
+                        Button(L10n.text("Clear filters", "Filters wissen")) {
+                            search = ""
+                            muscle = "All"
+                            equipment = "All"
+                        }
+                        .font(.caption.weight(.semibold))
+                    }
+                }
+                .padding(.horizontal, RFLayout.pagePadding)
+                .padding(.vertical, 8)
+
+                if filtered.isEmpty {
+                    ContentUnavailableView.search(text: search)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    List(filtered) { ex in
+                        NavigationLink {
+                            ExerciseDetailView(exercise: ex)
+                        } label: {
+                            ExerciseLibraryRow(exercise: ex)
+                        }
+                        .listRowBackground(RFLayout.style == "focused" ? RFTheme.surface : Color.clear)
+                        .listRowSeparator(RFLayout.style == "focused" ? .hidden : .visible)
+                        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                            Button {
+                                ExerciseShortcutStore.toggleFavorite(ex.id)
+                                refreshToken = UUID()
+                            } label: {
+                                Label(
+                                    ExerciseShortcutStore.isFavorite(ex.id)
+                                        ? L10n.text("Unfavorite", "Verwijder favoriet")
+                                        : L10n.text("Favorite", "Favoriet"),
+                                    systemImage: ExerciseShortcutStore.isFavorite(ex.id) ? "star.slash" : "star.fill"
+                                )
+                            }
+                            .tint(.yellow)
+                        }
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            if CustomExerciseStore.isCustom(ex.id) {
+                                Button(role: .destructive) {
+                                    deleteCandidate = ex
+                                } label: {
+                                    Label(L10n.text("Delete", "Verwijder"), systemImage: "trash")
                                 }
                             }
-
-                            Text("\(ex.muscle) • \(ex.equipment)")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
                         }
                     }
-                    .padding(.vertical, 4)
-                }
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    Button {
-                        ExerciseShortcutStore.toggleFavorite(ex.id)
-                        refreshToken = UUID()
-                    } label: {
-                        Label(
-                            ExerciseShortcutStore.isFavorite(ex.id)
-                                ? L10n.text("Unfavorite", "Verwijder favoriet")
-                                : L10n.text("Favorite", "Favoriet"),
-                            systemImage: ExerciseShortcutStore.isFavorite(ex.id) ? "star.slash" : "star.fill"
-                        )
-                    }
-                    .tint(.yellow)
-                }
-                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                    if CustomExerciseStore.isCustom(ex.id) {
-                        Button(role: .destructive) {
-                            deleteCandidate = ex
-                        } label: {
-                            Label(L10n.text("Delete", "Verwijder"), systemImage: "trash")
-                        }
-                    }
+                    .listStyle(.plain)
+                    .id(refreshToken)
+                    .scrollContentBackground(.hidden)
                 }
             }
-            .id(refreshToken)
-            .scrollContentBackground(.hidden)
             .background(RFTheme.bg)
-            .searchable(text: $search, prompt: L10n.text("Search exercises, aliases or equipment", "Zoek oefeningen, aliassen of apparatuur"))
+            .searchable(
+                text: $search,
+                prompt: L10n.text("Exercise or machine name", "Oefening of apparaat")
+            )
             .navigationTitle(L10n.exercises)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showCustomEditor = true
-                    } label: {
+                    Button { showCustomEditor = true } label: {
                         Image(systemName: "plus")
                     }
                     .accessibilityLabel(L10n.text("Create custom exercise", "Eigen oefening maken"))
                 }
-            }
-            .safeAreaInset(edge: .top) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(["All"] + ExerciseCatalog.muscles, id: \.self) { item in
-                            Button(item == "All" ? L10n.text("All", "Alles") : item) {
-                                muscle = item
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(muscle == item ? RFTheme.accent : .gray)
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.vertical, 6)
-                }
-                .background(.ultraThinMaterial)
             }
             .sheet(isPresented: $showCustomEditor, onDismiss: {
                 refreshToken = UUID()
@@ -7686,10 +7674,127 @@ struct ExerciseLibraryView: View {
         }
     }
 
-    private func icon(for movement: String) -> String {
-        switch movement {
-        case "press": return "arrow.up.circle.fill"
-        case "pull": return "arrow.down.circle.fill"
+    private var filterPanel: some View {
+        VStack(alignment: .leading, spacing: RFLayout.style == "compact" ? 8 : 12) {
+            HStack {
+                Text(L10n.text("Explore equipment", "Verken apparaten"))
+                    .font(RFLayout.style == "focused" ? .title3.bold() : .headline)
+                Spacer()
+                Menu {
+                    Button(L10n.text("All muscles", "Alle spiergroepen")) { muscle = "All" }
+                    ForEach(ExerciseCatalog.muscles, id: \.self) { option in
+                        Button(option) { muscle = option }
+                    }
+                } label: {
+                    Label(
+                        muscle == "All" ? L10n.text("Muscles", "Spieren") : muscle,
+                        systemImage: "line.3.horizontal.decrease"
+                    )
+                    .font(.subheadline.weight(.medium))
+                }
+            }
+            .padding(.horizontal, RFLayout.pagePadding)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(GymEquipmentFilter.options, id: \.self) { option in
+                        Button {
+                            equipment = option
+                        } label: {
+                            Text(GymEquipmentFilter.label(option))
+                                .font(.caption.weight(.semibold))
+                                .padding(.horizontal, 13)
+                                .padding(.vertical, RFLayout.style == "compact" ? 7 : 10)
+                                .foregroundStyle(equipment == option ? RFTheme.accent : .primary)
+                                .background(
+                                    equipment == option ? RFTheme.accent.opacity(0.16) : RFTheme.surface,
+                                    in: Capsule()
+                                )
+                                .overlay(Capsule().stroke(
+                                    equipment == option ? RFTheme.accent.opacity(0.65) : RFTheme.cardBorder
+                                ))
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(equipment == option ? .isSelected : [])
+                    }
+                }
+                .padding(.horizontal, RFLayout.pagePadding)
+            }
+
+            if equipment == "Machines" && search.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 7) {
+                        ForEach(GymEquipmentFilter.machineShortcuts, id: \.label) { shortcut in
+                            Button {
+                                search = shortcut.term
+                                muscle = "All"
+                            } label: {
+                                Label(shortcut.label, systemImage: "magnifyingglass")
+                                    .font(.caption)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 7)
+                            }
+                            .buttonStyle(.bordered)
+                        }
+                    }
+                    .padding(.horizontal, RFLayout.pagePadding)
+                }
+            }
+        }
+        .padding(.vertical, RFLayout.style == "compact" ? 8 : 12)
+        .background(.ultraThinMaterial)
+    }
+}
+
+struct ExerciseLibraryRow: View {
+    let exercise: ExerciseDefinition
+
+    var body: some View {
+        HStack(spacing: RFLayout.style == "compact" ? 10 : 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: RFLayout.style == "compact" ? 9 : 15)
+                    .fill(RFTheme.accent.opacity(0.12))
+                Image(systemName: symbol)
+                    .font(RFLayout.style == "compact" ? .body : .title3)
+                    .foregroundStyle(RFTheme.accent)
+            }
+            .frame(width: RFLayout.style == "compact" ? 38 : 54,
+                   height: RFLayout.style == "compact" ? 38 : 54)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text(exercise.name)
+                    .font(RFLayout.style == "compact" ? .subheadline.weight(.semibold) : .headline)
+                    .foregroundStyle(.primary)
+                HStack(spacing: 5) {
+                    Text(exercise.muscle)
+                    Text("•")
+                    Text(exercise.equipment)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            }
+
+            Spacer(minLength: 4)
+
+            if CustomExerciseStore.isCustom(exercise.id) {
+                Image(systemName: "person.crop.circle.badge.checkmark")
+                    .foregroundStyle(RFTheme.muted)
+                    .accessibilityLabel(L10n.text("Custom exercise", "Eigen oefening"))
+            } else if exercise.sourceID != nil {
+                Image(systemName: "play.rectangle")
+                    .foregroundStyle(RFTheme.muted)
+                    .accessibilityLabel(L10n.text("Video available", "Video beschikbaar"))
+            }
+        }
+        .padding(.vertical, RFLayout.style == "compact" ? 0 : 5)
+    }
+
+    private var symbol: String {
+        switch exercise.movement {
+        case "press": return "arrow.up.right"
+        case "pull": return "arrow.down.left"
         case "squat": return "figure.strengthtraining.traditional"
         case "hinge": return "figure.flexibility"
         case "cardio": return "figure.run"
