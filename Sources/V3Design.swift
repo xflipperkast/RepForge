@@ -27,7 +27,20 @@ enum V3 {
                 : Color(red: 0.61, green: 0.70, blue: 0.81)
     }
     static var border: Color { accent.opacity(isLight ? 0.13 : 0.17) }
-    static let radius: CGFloat = 24
+    static var radius: CGFloat {
+        switch RFLayout.style {
+        case "compact": return 16
+        case "focused": return 30
+        default: return 24
+        }
+    }
+    static var contentPadding: CGFloat {
+        switch RFLayout.style {
+        case "compact": return 13
+        case "focused": return 22
+        default: return 18
+        }
+    }
     static var panelGradient: LinearGradient {
         LinearGradient(
             colors: [accent.opacity(isLight ? 0.21 : 0.32), card, card],
@@ -85,7 +98,7 @@ struct V3Panel<Content: View>: View {
 
     var body: some View {
         content
-            .padding(18)
+            .padding(V3.contentPadding)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background {
                 RoundedRectangle(cornerRadius: V3.radius, style: .continuous)
