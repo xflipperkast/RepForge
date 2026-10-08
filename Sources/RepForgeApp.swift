@@ -5776,12 +5776,11 @@ struct WorkoutSetRow: View {
     @State private var showSetOptions = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            header
-            inputs
+        VStack(alignment: .leading, spacing: 7) {
+            entryRow
             previousValues
         }
-        .padding(12)
+        .padding(9)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             set.completed ? RFTheme.success.opacity(0.075) : RFTheme.raised.opacity(0.65),
@@ -5796,30 +5795,30 @@ struct WorkoutSetRow: View {
         }
     }
 
-    private var header: some View {
-        HStack(spacing: 10) {
+    private var entryRow: some View {
+        HStack(spacing: 7) {
             Button {
                 showSetOptions = true
             } label: {
-                HStack(spacing: 6) {
-                    Text(L10n.text("SET", "SET") + " \(set.order + 1)")
-                        .font(.subheadline.weight(.bold))
+                VStack(spacing: 2) {
+                    Text("\(set.order + 1)")
+                        .font(.headline.monospacedDigit())
+                        .foregroundStyle(.primary)
                     if set.setType != "working" {
-                        Text(set.setType.uppercased())
-                            .font(.system(size: 9, weight: .bold))
+                        Text("•")
+                            .font(.system(size: 7, weight: .black))
                             .foregroundStyle(RFTheme.accent)
                     }
-                    Image(systemName: "chevron.down")
-                        .font(.caption2.weight(.bold))
-                        .foregroundStyle(RFTheme.muted)
                 }
-                .frame(minHeight: 44, alignment: .leading)
+                .frame(width: 34, height: 49)
+                .background(RFTheme.field, in: RoundedRectangle(cornerRadius: 11))
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(L10n.text("Set", "Set") + " \(set.order + 1)")
 
-            Spacer(minLength: 3)
-            moreActions
+            inputs
             completeButton
+            moreActions
         }
     }
 
@@ -5839,7 +5838,7 @@ struct WorkoutSetRow: View {
             Image(systemName: "ellipsis")
                 .font(.headline)
                 .foregroundStyle(RFTheme.muted)
-                .frame(width: 40, height: 44)
+                .frame(width: 29, height: 49)
                 .contentShape(Rectangle())
         }
         .accessibilityLabel(L10n.text("More set actions", "Meer setacties"))
@@ -5847,19 +5846,14 @@ struct WorkoutSetRow: View {
 
     private var completeButton: some View {
         Button(action: toggleCompleted) {
-            HStack(spacing: 6) {
-                Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
-                    .font(.title3)
-                Text(set.completed ? L10n.text("Done", "Klaar") : L10n.text("Log", "Log"))
-                    .font(.subheadline.weight(.bold))
-            }
-            .foregroundStyle(set.completed ? RFTheme.success : RFTheme.accent)
-            .padding(.horizontal, 12)
-            .frame(minHeight: 44)
-            .background(
-                set.completed ? RFTheme.success.opacity(0.12) : RFTheme.accent.opacity(0.12),
-                in: RoundedRectangle(cornerRadius: 12)
-            )
+            Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(set.completed ? RFTheme.success : RFTheme.accent)
+                .frame(width: 44, height: 49)
+                .background(
+                    set.completed ? RFTheme.success.opacity(0.12) : RFTheme.accent.opacity(0.12),
+                    in: RoundedRectangle(cornerRadius: 11)
+                )
         }
         .buttonStyle(.plain)
         .accessibilityLabel(set.completed
@@ -5868,7 +5862,7 @@ struct WorkoutSetRow: View {
     }
 
     private var inputs: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 7) {
             entryField(
                 title: AppPreferences.weightLabel.uppercased(),
                 value: Binding(
@@ -5943,16 +5937,17 @@ struct WorkoutSetRow: View {
     private func entryField(
         title: String, value: Binding<Double>, integerOnly: Bool
     ) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.system(size: 10, weight: .bold))
-                .tracking(1)
+                .font(.system(size: 9, weight: .bold))
+                .tracking(0.7)
                 .foregroundStyle(RFTheme.muted)
             DoneNumberField(value: value, integerOnly: integerOnly, placeholder: "0")
-                .frame(height: 48)
-                .background(RFTheme.field, in: RoundedRectangle(cornerRadius: 11))
+                .frame(height: 31)
         }
         .frame(maxWidth: .infinity)
+        .frame(height: 49)
+        .background(RFTheme.field, in: RoundedRectangle(cornerRadius: 11))
     }
 }
 
