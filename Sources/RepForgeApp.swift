@@ -1101,7 +1101,7 @@ Smith Machine Leg Press|Quadriceps|Machine|squat
     // The bundled video catalog is not a complete exercise catalog by itself.
     private static let additionalMachineBuiltIn: [ExerciseDefinition] = GymMachineCatalog.variants.map { exercise in
         guard let sourceID = exercise.sourceID,
-              let item = (try? bundledItems())?.first(where: { $0.id == sourceID }) else {
+              let item = bundledSourceItems[sourceID] else {
             return exercise
         }
         return ExerciseDefinition(
@@ -1120,20 +1120,26 @@ Smith Machine Leg Press|Quadriceps|Machine|squat
         )
     }
 
-    private static func bundledItems() throws -> [ExerciseDBItem] {
-        guard let url = Bundle.main.url(forResource: "ExerciseDatabase", withExtension: "json") else {
-            return []
+    private static let bundledSourceItems: [String: ExerciseDBItem] = {
+        guard let url = Bundle.main.url(forResource: "ExerciseDatabase", withExtension: "json"),
+              let data = try? Data(contentsOf: url),
+              let items = try? JSONDecoder().decode([ExerciseDBItem].self, from: data) else {
+            return [:]
         }
-        return try JSONDecoder().decode([ExerciseDBItem].self, from: Data(contentsOf: url))
-    }
+        return Dictionary(uniqueKeysWithValues: items.map { ($0.id, $0) })
+    }()
 
-    static var all: [ExerciseDefinition] {
+    private static let combinedBuiltIn: [ExerciseDefinition] = {
         let primary = databaseBuiltIn.isEmpty ? legacyBuiltIn : databaseBuiltIn
         var names = Set(primary.map { $0.name.lowercased() })
         let additional = (additionalMachineBuiltIn + legacyBuiltIn).filter { item in
             names.insert(item.name.lowercased()).inserted
         }
-        return primary + additional + CustomExerciseStore.load().map { $0.definition }
+        return primary + additional
+    }()
+
+    static var all: [ExerciseDefinition] {
+        combinedBuiltIn + CustomExerciseStore.load().map { $0.definition }
     }
 
     static func find(_ id: String) -> ExerciseDefinition? {
