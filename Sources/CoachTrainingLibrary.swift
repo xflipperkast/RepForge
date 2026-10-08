@@ -1,6 +1,22 @@
 import SwiftUI
 import SwiftData
 
+/// One estimator for curated workouts, the user's editable plan, and saved templates.
+enum TrainingTimeEstimator {
+    static func minutes(for exercises: [ProgramExercise], warmup: Int = 5, rest: Int = 90) -> Int {
+        guard !exercises.isEmpty else { return 0 }
+        let workingSeconds = exercises.reduce(0) { total, exercise in
+            let cardio = ExerciseCatalog.findByName(exercise.name)?.movement == "cardio"
+            let repSeconds = cardio ? 8 * 60 : 42
+            return total + (exercise.sets * repSeconds)
+                + (max(0, exercise.sets - 1) * (cardio ? 30 : rest))
+        }
+        let switchingSeconds = max(0, exercises.count - 1) * 70
+        let seconds = warmup * 60 + workingSeconds + switchingSeconds
+        return max(15, Int(ceil(Double(seconds) / 300)) * 5)
+    }
+}
+
 /// Estimated time includes setup, warm-up, working sets, transitions and suggested rest.
 /// It is not a promise: actual pace, equipment availability and experience vary.
 struct CoachWorkout: Identifiable {
@@ -20,15 +36,7 @@ struct CoachWorkout: Identifiable {
     }
 
     var estimatedMinutes: Int {
-        let workingSeconds = exercises.reduce(0) { total, exercise in
-            let cardio = ExerciseCatalog.findByName(exercise.name)?.movement == "cardio"
-            let repSeconds = cardio ? 8 * 60 : 42
-            return total + (exercise.sets * repSeconds)
-                + (max(0, exercise.sets - 1) * (cardio ? 30 : restSeconds))
-        }
-        let switchingSeconds = max(0, exercises.count - 1) * 70
-        let seconds = warmupMinutes * 60 + workingSeconds + switchingSeconds
-        return max(15, Int(ceil(Double(seconds) / 300)) * 5)
+        TrainingTimeEstimator.minutes(for: exercises, warmup: warmupMinutes, rest: restSeconds)
     }
 
     var totalSets: Int { exercises.reduce(0) { $0 + $1.sets } }
