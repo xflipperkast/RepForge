@@ -6,6 +6,7 @@ struct NextExploreView: View {
     @State private var muscle = "All"
     @State private var favoritesOnly = false
     @State private var showCreate = false
+    @State private var showLegacyLibrary = false
     @State private var revision = 0
 
     private var filtered: [ExerciseDefinition] {
@@ -152,8 +153,8 @@ struct NextExploreView: View {
                         }
                     }
 
-                    NavigationLink {
-                        ExerciseLibraryView()
+                    Button {
+                        showLegacyLibrary = true
                     } label: {
                         NextLinkRow(
                             symbol: "square.and.pencil",
@@ -172,6 +173,9 @@ struct NextExploreView: View {
             }
             .nextCanvas()
             .toolbar(.hidden, for: .navigationBar)
+            .sheet(isPresented: $showLegacyLibrary) {
+                ExerciseLibraryView()
+            }
             .sheet(isPresented: $showCreate, onDismiss: {
                 revision += 1
             }) {
