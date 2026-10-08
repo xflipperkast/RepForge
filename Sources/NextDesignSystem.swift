@@ -46,13 +46,23 @@ struct NextSurface: ViewModifier {
     func body(content: Content) -> some View {
         content
             .padding(prominent ? 20 : 16)
-            .background(
-                prominent ? NextStyle.heroGradient : LinearGradient(
-                    colors: [NextStyle.panel, NextStyle.panel],
-                    startPoint: .top, endPoint: .bottom
-                ),
-                in: RoundedRectangle(cornerRadius: radius, style: .continuous)
-            )
+            .background {
+                RoundedRectangle(cornerRadius: radius, style: .continuous)
+                    .fill(
+                        prominent ? NextStyle.heroGradient : LinearGradient(
+                            colors: [NextStyle.panel, NextStyle.panel],
+                            startPoint: .top, endPoint: .bottom
+                        )
+                    )
+                    .overlay(alignment: .topTrailing) {
+                        if prominent {
+                            NextSignatureArtwork()
+                                .offset(x: 64, y: -57)
+                        }
+                    }
+                    .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
+                    .allowsHitTesting(false)
+            }
             .overlay {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
                     .stroke(
@@ -68,6 +78,40 @@ extension View {
     func nextCanvas() -> some View { modifier(NextCanvas()) }
     func nextSurface(prominent: Bool = false, radius: CGFloat = 22) -> some View {
         modifier(NextSurface(prominent: prominent, radius: radius))
+    }
+}
+
+// Static orbital engraving: a distinctive premium visual without timers,
+// blur-heavy layers, or an indefinitely-running animation.
+struct NextSignatureArtwork: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(NextStyle.electric.opacity(0.25), lineWidth: 1)
+                .frame(width: 212, height: 212)
+            Circle()
+                .trim(from: 0.08, to: 0.74)
+                .stroke(
+                    AngularGradient(colors: [
+                        NextStyle.electric.opacity(0.0),
+                        NextStyle.electric.opacity(0.55),
+                        NextStyle.electric.opacity(0.1)
+                    ], center: .center),
+                    style: StrokeStyle(lineWidth: 9, lineCap: .round)
+                )
+                .rotationEffect(.degrees(-35))
+                .frame(width: 176, height: 176)
+            Circle()
+                .stroke(NextStyle.electric.opacity(0.15), style:
+                        StrokeStyle(lineWidth: 1, dash: [6, 9]))
+                .frame(width: 140, height: 140)
+            Text("R")
+                .font(.system(size: 98, weight: .black, design: .rounded))
+                .italic()
+                .foregroundStyle(NextStyle.electric.opacity(0.25))
+        }
+        .frame(width: 240, height: 240)
+        .accessibilityHidden(true)
     }
 }
 
