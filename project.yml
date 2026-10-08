@@ -42,3 +42,17 @@ targets:
         APPLICATION_EXTENSION_API_ONLY: YES
         SKIP_INSTALL: YES
         SUPPORTS_MACCATALYST: NO
+
+  RepForgeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: RepForgeUITests
+    dependencies:
+      - target: RepForge
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.xflipperkast.repforge.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1"
