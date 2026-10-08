@@ -352,6 +352,7 @@ struct V3StrengthSet: View {
 
 struct V3CardioSet: View {
     @Environment(\.modelContext) private var context
+    @ObservedObject private var heartRateMonitor = HeartRateMonitor.shared
     @Bindable var set: WorkoutSet
     let canDelete: Bool
     let onCompleted: (Bool) -> Void
@@ -409,6 +410,19 @@ struct V3CardioSet: View {
                                     set.averageHeartRate = number > 0 ? number : nil
                                 }
                               ), integerOnly: true)
+            }
+            if let bpm = heartRateMonitor.bpm {
+                Button {
+                    set.averageHeartRate = bpm
+                    try? context.save()
+                    Haptics.light()
+                } label: {
+                    Label(L10n.text("Use current heart rate", "Gebruik huidige hartslag") +
+                          ": \(bpm) bpm", systemImage: "heart.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(V3.accent)
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
             }
             Button {
                 UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder),
