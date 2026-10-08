@@ -205,55 +205,77 @@ struct V3StrengthSet: View {
     @State private var showSetOptions = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 9) {
-            if dynamicType.isAccessibilitySize {
-                VStack(spacing: 8) {
-                    HStack {
-                        setNumber
-                        Spacer()
-                        actions
-                        complete
-                    }
-                    inputs
-                }
-            } else {
-                HStack(spacing: 7) {
+        VStack(alignment: .leading, spacing: 8) {
+            entryContent
+            previousContent
+        }
+        .padding(10)
+        .background(
+            set.completed ? V3.positive.opacity(0.09) : V3.background.opacity(0.68),
+            in: RoundedRectangle(cornerRadius: 17)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 17).stroke(
+                set.completed ? V3.positive.opacity(0.5) : V3.border
+            )
+        )
+        .sheet(isPresented: $showSetOptions) {
+            SetOptionsView(set: set)
+        }
+    }
+
+    @ViewBuilder
+    private var entryContent: some View {
+        if dynamicType.isAccessibilitySize {
+            VStack(spacing: 8) {
+                HStack {
                     setNumber
-                    inputs
-                    complete
+                    Spacer()
                     actions
+                    complete
                 }
+                inputs
             }
-            if let previous {
-                HStack(spacing: 7) {
-                    Text(L10n.text("Last", "Vorig") + ": " +
-                         AppPreferences.displayWeight(previous.0).formatted(
-                            .number.precision(.fractionLength(0...2))) +
-                         " " + AppPreferences.weightLabel + " × \(previous.1)")
-                        .font(.caption).foregroundStyle(V3.faint)
-                    Spacer(minLength: 2)
-                    if !set.completed {
-                        Button {
-                            set.weightKg = previous.0
-                            set.reps = previous.1
-                            try? context.save()
-                        } label: {
-                            Label(L10n.text("Copy", "Kopieer"), systemImage: "arrow.down.to.line")
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(V3.accent)
-                                .frame(minHeight: 40)
-                        }
+        } else {
+            HStack(spacing: 7) {
+                setNumber
+                inputs
+                complete
+                actions
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var previousContent: some View {
+        if let previous {
+            HStack(spacing: 7) {
+                Text(previousDescription(weight: previous.0, reps: previous.1))
+                    .font(.caption)
+                    .foregroundStyle(V3.faint)
+                Spacer(minLength: 2)
+                if !set.completed {
+                    Button {
+                        set.weightKg = previous.0
+                        set.reps = previous.1
+                        try? context.save()
+                    } label: {
+                        Label(L10n.text("Copy", "Kopieer"), systemImage: "arrow.down.to.line")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(V3.accent)
+                            .frame(minHeight: 40)
                     }
                 }
             }
         }
-        .padding(10)
-        .background(set.completed ? V3.positive.opacity(0.09) : V3.background.opacity(0.68),
-                    in: RoundedRectangle(cornerRadius: 17))
-        .overlay(RoundedRectangle(cornerRadius: 17).stroke(
-            set.completed ? V3.positive.opacity(0.5) : V3.border
-        ))
-        .sheet(isPresented: $showSetOptions) { SetOptionsView(set: set) }
+    }
+
+    private func previousDescription(weight: Double, reps: Int) -> String {
+        let value = AppPreferences.displayWeight(weight).formatted(
+            .number.precision(.fractionLength(0...2))
+        )
+        return L10n.text("Last", "Vorig") + ": " +
+            value + " " + AppPreferences.weightLabel + " × \(reps)"
     }
 
     private var setNumber: some View {
