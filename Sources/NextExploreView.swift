@@ -149,7 +149,7 @@ struct NextExploreView: View {
                                 )
                             }
                             .nextSurface(radius: 18)
-                            .id("\(exercise.id)-\(revision)")
+
                         }
                     }
 
