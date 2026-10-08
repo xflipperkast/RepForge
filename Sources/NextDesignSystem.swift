@@ -120,7 +120,7 @@ struct NextStat: View {
                 .foregroundStyle(NextStyle.electric)
                 .accessibilityHidden(true)
             Text(value)
-                .font(.system(size: 24, weight: .black, design: .rounded))
+                .font(.system(.title2, design: .rounded, weight: .black))
                 .monospacedDigit()
                 .minimumScaleFactor(0.7)
                 .lineLimit(1)
@@ -215,7 +215,7 @@ struct NextScreenHeader: View {
         VStack(alignment: .leading, spacing: 10) {
             NextEyebrow(text: eyebrow)
             Text(title)
-                .font(.system(size: 38, weight: .black, design: .rounded))
+                .font(.system(.largeTitle, design: .rounded, weight: .black))
                 .tracking(-1.2)
                 .minimumScaleFactor(0.75)
                 .lineLimit(2)
@@ -257,10 +257,12 @@ enum NextRoute: Int, CaseIterable, Identifiable {
 struct NextNavigation: View {
     @Binding var selection: Int
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
 
     var body: some View {
-        HStack(spacing: 2) {
-            ForEach(NextRoute.allCases) { route in
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 2) {
+                ForEach(NextRoute.allCases) { route in
                 let selected = selection == route.rawValue
                 Button {
                     if !reduceMotion {
@@ -273,12 +275,13 @@ struct NextNavigation: View {
                             .font(.system(size: 19, weight: selected ? .bold : .medium))
                             .frame(height: 23)
                         Text(route.label)
-                            .font(.system(size: 10, weight: selected ? .heavy : .medium))
+                            .font(.caption2.weight(selected ? .heavy : .medium))
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
                     }
                     .foregroundStyle(selected ? Color.black : NextStyle.muted)
                     .frame(maxWidth: .infinity)
+                    .frame(minWidth: typeSize.isAccessibilitySize ? 95 : 0)
                     .frame(minHeight: 51)
                     .background {
                         if selected {
@@ -292,8 +295,11 @@ struct NextNavigation: View {
                 .accessibilityLabel(route.label)
                 .accessibilityAddTraits(selected ? .isSelected : [])
                 .accessibilityHint(L10n.text("Switch tab", "Wissel tab"))
+                }
             }
+            .frame(maxWidth: typeSize.isAccessibilitySize ? nil : .infinity)
         }
+        .scrollBounceBehavior(.basedOnSize)
         .padding(6)
         .background(NextStyle.panel, in: RoundedRectangle(cornerRadius: 24))
         .overlay {
