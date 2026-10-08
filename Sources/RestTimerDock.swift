@@ -4,6 +4,7 @@ import SwiftUI
 struct RestTimerDock: View {
     let endDate: Date
     let exerciseName: String
+    let totalSeconds: Int
     let onAdjust: (Int) -> Void
     let onReset: () -> Void
     let onSkip: () -> Void
@@ -17,7 +18,7 @@ struct RestTimerDock: View {
                     Circle()
                         .stroke(RFTheme.accent.opacity(0.15), lineWidth: 3)
                     Circle()
-                        .trim(from: 0, to: min(1, Double(seconds) / 90.0))
+                        .trim(from: 0, to: min(1, Double(seconds) / Double(max(totalSeconds, 1))))
                         .stroke(
                             RFTheme.accent,
                             style: StrokeStyle(lineWidth: 3, lineCap: .round)
