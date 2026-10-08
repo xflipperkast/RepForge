@@ -8,6 +8,8 @@ struct NextProgramsView: View {
     @State private var active: WorkoutSession?
     @State private var scheduled: ScheduledWorkoutRecord?
     @State private var toast: String?
+    @State private var showLegacyPlan = false
+    @State private var showStudio = false
     @AppStorage("activeGymID") private var gymID = GymProfileStore.defaultID
 
     private var filtered: [CoachWorkout] {
@@ -69,8 +71,8 @@ struct NextProgramsView: View {
                         .buttonStyle(NextPressStyle())
                     }
 
-                    NavigationLink {
-                        TrainingHubView()
+                    Button {
+                        showLegacyPlan = true
                     } label: {
                         NextLinkRow(
                             symbol: "calendar.badge.clock",
@@ -83,8 +85,8 @@ struct NextProgramsView: View {
                     }
                     .buttonStyle(NextPressStyle())
 
-                    NavigationLink {
-                        StartWorkoutView()
+                    Button {
+                        showStudio = true
                     } label: {
                         NextLinkRow(
                             symbol: "square.stack.3d.up.fill",
@@ -107,6 +109,12 @@ struct NextProgramsView: View {
                         prompt: L10n.text("Search programs", "Zoek trainingsschema's"))
             .fullScreenCover(item: $active) { session in
                 ActiveWorkoutView(session: session)
+            }
+            .sheet(isPresented: $showLegacyPlan) {
+                TrainingHubView()
+            }
+            .sheet(isPresented: $showStudio) {
+                StartWorkoutView()
             }
             .sheet(item: $scheduled) { record in
                 ScheduleWorkoutSheet(seed: record) { updated in
@@ -302,5 +310,6 @@ struct NextSplitDetailView: View {
         .nextCanvas()
         .navigationTitle(split.title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(.visible, for: .navigationBar)
     }
 }
