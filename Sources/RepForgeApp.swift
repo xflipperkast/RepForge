@@ -6884,6 +6884,14 @@ struct SessionDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
+                NextScreenHeader(
+                    eyebrow: L10n.text("SESSION ARCHIVE", "TRAININGSARCHIEF"),
+                    title: session.title,
+                    detail: L10n.text(
+                        "Your performance, preserved.",
+                        "Jouw resultaten, opgeslagen."
+                    )
+                )
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -7706,7 +7714,17 @@ struct ExerciseDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Picker("Section", selection: $tab) {
+                NextScreenHeader(
+                    eyebrow: exercise.muscle.uppercased() + " / " + exercise.equipment.uppercased(),
+                    title: exercise.name,
+                    detail: L10n.text(
+                        "Technique, working muscles, history and progression.",
+                        "Techniek, spierbelasting, geschiedenis en vooruitgang."
+                    )
+                )
+                .nextSurface(prominent: true)
+
+                Picker(L10n.text("Section", "Onderdeel"), selection: $tab) {
                     Text("Guide").tag(0)
                     Text("History").tag(1)
                     Text("Charts").tag(2)
@@ -7721,7 +7739,7 @@ struct ExerciseDetailView: View {
             }
             .padding()
         }
-        .background(RFTheme.bg)
+        .nextCanvas()
         .navigationTitle(exercise.name)
         .navigationBarTitleDisplayMode(.inline)
     }
