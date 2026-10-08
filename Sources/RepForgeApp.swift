@@ -6117,16 +6117,10 @@ struct WorkoutSummaryView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
-                    VStack(spacing: 8) {
-                        Image(systemName: prs.isEmpty ? "checkmark.circle.fill" : "trophy.fill")
-                            .font(.system(size: 48))
-                            .foregroundStyle(prs.isEmpty ? RFTheme.success : RFTheme.accent)
-                        Text(L10n.text("Workout Complete", "Training voltooid"))
-                            .font(.largeTitle.bold())
-                        Text(session.title)
-                            .foregroundStyle(RFTheme.muted)
-                    }
-                    .frame(maxWidth: .infinity)
+                    NextCelebrationHeader(
+                        session: session,
+                        recordCount: prs.count
+                    )
 
                     ForgeSessionRewards(session: session, sessions: sessions)
 
@@ -6280,7 +6274,7 @@ struct WorkoutSummaryView: View {
                 }
                 .padding()
             }
-            .background(RFTheme.bg)
+            .nextCanvas()
             .navigationTitle(L10n.text("Summary", "Samenvatting"))
             .navigationBarTitleDisplayMode(.inline)
         }
