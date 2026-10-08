@@ -3970,13 +3970,15 @@ struct ExercisePickerView: View {
     @Binding var selectedIDs: [String]
     @State private var search = ""
     @State private var muscle = "All"
+    @State private var equipment = "All"
     @AppStorage("exerciseShortcutRevision") private var shortcutRevision = 0
 
     private var filtered: [ExerciseDefinition] {
         _ = shortcutRevision
         return ExerciseCatalog.all.filter { ex in
             ExerciseSearch.matches(ex, query: search) &&
-            (muscle == "All" || ex.muscle == muscle)
+            (muscle == "All" || ex.muscle == muscle) &&
+            GymEquipmentFilter.matches(ex, selected: equipment)
         }
     }
 
@@ -3991,7 +3993,8 @@ struct ExercisePickerView: View {
     }
 
     private var showShortcuts: Bool {
-        search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && muscle == "All"
+        search.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            muscle == "All" && equipment == "All"
     }
 
     var body: some View {
@@ -4025,19 +4028,33 @@ struct ExercisePickerView: View {
             .background(RFTheme.bg)
             .navigationTitle(L10n.exercises)
             .safeAreaInset(edge: .top) {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack {
-                        ForEach(["All"] + ExerciseCatalog.muscles, id: \.self) { item in
-                            Button(item == "All" ? L10n.text("All", "Alles") : item) {
-                                muscle = item
-                            }
-                            .buttonStyle(.bordered)
-                            .tint(muscle == item ? RFTheme.accent : .gray)
+                HStack(spacing: 10) {
+                    Menu {
+                        Button(L10n.text("All muscles", "Alle spiergroepen")) { muscle = "All" }
+                        ForEach(ExerciseCatalog.muscles, id: \.self) { option in
+                            Button(option) { muscle = option }
                         }
+                    } label: {
+                        Label(muscle == "All" ? L10n.text("Muscles", "Spieren") : muscle,
+                              systemImage: "figure.strengthtraining.traditional")
+                            .font(.subheadline.weight(.medium))
+                            .lineLimit(1)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
+
+                    Spacer()
+
+                    Menu {
+                        ForEach(GymEquipmentFilter.options, id: \.self) { option in
+                            Button(GymEquipmentFilter.label(option)) { equipment = option }
+                        }
+                    } label: {
+                        Label(GymEquipmentFilter.label(equipment), systemImage: "slider.horizontal.3")
+                            .font(.subheadline.weight(.medium))
+                            .lineLimit(1)
+                    }
                 }
+                .padding(.horizontal)
+                .padding(.vertical, 10)
                 .background(.ultraThinMaterial)
             }
             .safeAreaInset(edge: .bottom) {
