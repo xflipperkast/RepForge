@@ -161,3 +161,40 @@ struct LiveWorkoutHeatmap: View {
         }
     }
 }
+
+struct ExerciseTargetHeatmap: View {
+    let exercise: ExerciseDefinition
+
+    private var intensity: [String: Double] {
+        Dictionary(uniqueKeysWithValues: exercise.detailedMuscles.map {
+            ($0.muscle, min(1, max(0, $0.weight)))
+        })
+    }
+
+    var body: some View {
+        if !intensity.isEmpty {
+            HStack(spacing: 12) {
+                HStack(alignment: .top, spacing: 8) {
+                    BodyMuscleFigure(side: .front, intensity: intensity)
+                    BodyMuscleFigure(side: .back, intensity: intensity)
+                }
+                .frame(width: 136)
+
+                VStack(alignment: .leading, spacing: 7) {
+                    Text(L10n.text("Targeted muscles", "Doelspieren"))
+                        .font(.headline)
+                    Text(L10n.text(
+                        "Primary and supporting muscles highlighted anatomically.",
+                        "Primaire en ondersteunende spieren anatomisch gemarkeerd."
+                    ))
+                    .font(.caption)
+                    .foregroundStyle(RFTheme.muted)
+                    MuscleHeatLegend()
+                }
+            }
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RFTheme.surface, in: RoundedRectangle(cornerRadius: 18))
+        }
+    }
+}
