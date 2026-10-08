@@ -4263,8 +4263,8 @@ struct ActiveWorkoutView: View {
                             .stroke(RFTheme.cardBorder)
                     )
                 }
-                .padding()
-                .padding(.bottom, restRemaining > 0 ? 82 : 16)
+                .padding(RFLayout.pagePadding)
+                .padding(.bottom, restRemaining > 0 ? 14 : 12)
             }
             .scrollDismissesKeyboard(.interactively)
             .background(
@@ -4286,42 +4286,29 @@ struct ActiveWorkoutView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                if restRemaining > 0 {
-                    Group {
-                        if restCollapsed {
-                            RestTimerCompactChip(
-                                remaining: restRemaining,
-                                onExpand: { restCollapsed = false },
-                                onSubtract15: { adjustRest(by: -15) },
-                                onAdd15: { adjustRest(by: 15) },
-                                onSkip: { stopRest() }
-                            )
-                        } else {
-                            RestTimerBanner(
-                                remaining: restRemaining,
-                                original: max(restOriginal, 1),
-                                exerciseName: restExerciseName,
-                                onAdjust: { adjustRest(by: $0) },
-                                onReset: { resetRest() },
-                                onMinimize: { restCollapsed = true },
-                                onSkip: { stopRest() }
-                            )
-                        }
-                    }
-                    .padding(.horizontal)
-                    .padding(.bottom, 4)
+                if restRemaining > 0, let endDate = restEndDate {
+                    RestTimerDock(
+                        endDate: endDate,
+                        exerciseName: restExerciseName,
+                        onAdjust: { adjustRest(by: $0) },
+                        onReset: { resetRest() },
+                        onSkip: { stopRest() }
+                    )
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 5)
                 }
             }
             .onReceive(restTicker) { _ in
                 guard let end = restEndDate else { return }
                 let remaining = max(0, Int(ceil(end.timeIntervalSinceNow)))
-                restRemaining = remaining
-
+                // Updating @State once per second used to invalidate the entire
+                // exercise list. TimelineView now owns the visible countdown.
                 if countdownHaptics && (1...3).contains(remaining) {
                     Haptics.light()
                 }
 
                 if remaining == 0 {
+                    restRemaining = 0
                     restEndDate = nil
                     RestTimerLiveActivityManager.end()
                     Haptics.success()
@@ -4389,28 +4376,6 @@ struct ActiveWorkoutView: View {
             onDuplicate: { duplicateExercise(log) },
             onRemoveExercise: { removeExercise(log) }
         )
-        .draggable(log.id.uuidString) {
-            HStack(spacing: 8) {
-                Image(systemName: "line.3.horizontal")
-                Text(ExerciseCatalog.find(log.exerciseID)?.name ?? "Exercise")
-                    .font(.headline)
-            }
-            .padding(12)
-            .background(RFTheme.surface)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
-        }
-        .dropDestination(for: String.self) { items, _ in
-            handleExerciseDrop(items, targetID: log.id)
-        } isTargeted: { targeted in
-            updateDropTarget(log.id, targeted: targeted)
-        }
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .stroke(
-                    draggingExerciseID == log.id ? RFTheme.accent : Color.clear,
-                    lineWidth: 2
-                )
-        )
     }
 
     private func handleExerciseDrop(_ items: [String], targetID: UUID) -> Bool {
@@ -4429,7 +4394,7 @@ struct ActiveWorkoutView: View {
     }
 
     private var workoutHero: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 13) {
             HStack(alignment: .top, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 16)
@@ -4548,14 +4513,11 @@ struct ActiveWorkoutView: View {
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
-        .background(RFTheme.heroGradient)
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .padding(15)
+        .background(RFTheme.surface, in: RoundedRectangle(cornerRadius: 19))
         .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(RFTheme.cardBorder)
+            RoundedRectangle(cornerRadius: 19).stroke(RFTheme.cardBorder)
         )
-        .shadow(color: Color.black.opacity(0.12), radius: 14, y: 7)
     }
 
     private func finishWorkout() {
