@@ -145,6 +145,38 @@ RepForge currently includes:
 - Multiple text-size options
 - Haptics and workout-behavior preferences
 
+## Training experience
+
+### Home and motivation
+
+The main navigation is **Train / Plans / Exercises / History / Profile**. Settings live in the Profile toolbar.
+
+- Real workout-history-based XP and level progression. Points are earned from completed sessions and set entries, not manual check-ins.
+- Milestone cards and weekly consistency streaks derived from stored training history; no new account or persistent progression schema.
+- An interactive, 13-week session-activity heatmap and today's anatomical muscle activation preview.
+- During a workout, the live anatomical heatmap illuminates muscles as sets are logged.
+- Workout summaries display earned XP, newly earned milestones and a workout-specific muscle map.
+
+### Workout and training-plan library
+
+**Plans** is a separate area containing 28 goal-oriented training examples, six multi-session splits and the original, editable three-week program.
+
+- Filter ready-made workouts by goal or experience level.
+- Review exercise order, prescribed sets, rep ranges, optional cues and estimated training time.
+- Start immediately, save a session as a custom template or schedule it for later.
+- The original three-week program retains its saved edits, sharing, scheduling and manual-reset functionality.
+- Estimated time includes warm-up, work, suggested rest and station transitions. Equipment availability and actual duration will vary.
+
+The workouts are original general-purpose examples and are **not represented as certified professional prescriptions**, medical guidance or customized coaching. For general training guidance see the [2026 ACSM resistance-training position stand](https://acsm.org/science-spotlight-acsm-releases-new-position-stand-on-resistance-training/) and [NSCA training-frequency guidance](https://www.nsca.com/education/articles/kinetic-select/determination-of-resistance-training-frequency/).
+
+### Muscle intelligence
+
+- Front/back anatomical heatmap of effective muscle sets for this week, last week or the previous 28 days.
+- Toggle to an estimated-recovery view computed from prior sessions.
+- Tap muscle breakdown rows for additional context.
+- The exercise detail page shows primary and assisting muscles anatomically.
+- Recovery is a heuristic inferred from logged sets and elapsed time—not a physiological or medical measurement.
+
 ## Data and privacy
 
 RepForge is designed as a local-first application.
