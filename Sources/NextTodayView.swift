@@ -7,6 +7,9 @@ struct NextTodayView: View {
     @Query(sort: \WorkoutTemplate.createdAt, order: .reverse) private var templates: [WorkoutTemplate]
     @State private var current: WorkoutSession?
     @State private var showTemplates = false
+    @State private var showStudio = false
+    @State private var showSettings = false
+    @State private var showPrograms = false
     @AppStorage("activeGymID") private var gymID = GymProfileStore.defaultID
 
     private var complete: [WorkoutSession] { sessions.filter { $0.endedAt != nil } }
@@ -49,8 +52,8 @@ struct NextTodayView: View {
                         subtitle: L10n.text("Everything a serious training app needs",
                                             "Alles voor een goede training")
                     )
-                    NavigationLink {
-                        StartWorkoutView()
+                    Button {
+                        showStudio = true
                     } label: {
                         NextLinkRow(symbol: "square.stack.3d.up.fill",
                                     title: L10n.text("Workout studio", "Workoutstudio"),
@@ -97,6 +100,15 @@ struct NextTodayView: View {
             .fullScreenCover(item: $current) { session in
                 ActiveWorkoutView(session: session)
             }
+            .sheet(isPresented: $showStudio) {
+                StartWorkoutView()
+            }
+            .sheet(isPresented: $showSettings) {
+                SettingsView()
+            }
+            .sheet(isPresented: $showPrograms) {
+                TrainingHubView()
+            }
             .sheet(isPresented: $showTemplates) {
                 NavigationStack {
                     ScrollView {
@@ -136,8 +148,8 @@ struct NextTodayView: View {
                                   "Elke herhaling telt. Maak er wat van.")
             )
             Spacer(minLength: 2)
-            NavigationLink {
-                SettingsView()
+            Button {
+                showSettings = true
             } label: {
                 Image(systemName: "slider.horizontal.3")
                     .font(.headline)
@@ -192,8 +204,8 @@ struct NextTodayView: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                 }
                 .buttonStyle(.bordered)
-                NavigationLink {
-                    TrainingHubView()
+                Button {
+                    showPrograms = true
                 } label: {
                     Label(L10n.text("Find a plan", "Zoek een schema"), systemImage: "sparkle.magnifyingglass")
                         .font(.subheadline.weight(.semibold))
