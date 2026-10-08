@@ -2889,6 +2889,7 @@ struct StartWorkoutView: View {
     @Query(sort: \WorkoutTemplate.createdAt, order: .reverse) private var templates: [WorkoutTemplate]
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
     @State private var showTemplateEditor = false
+    @State private var showTrainingHub = false
     @State private var templateSeed: ProgramDay?
     @State private var editingTemplate: WorkoutTemplate?
     @State private var activeSession: WorkoutSession?
@@ -2968,6 +2969,8 @@ struct StartWorkoutView: View {
                     )
 
                     ForgeMomentumCard(sessions: sessions, condensed: true)
+
+                    WorkoutActivityHeatmap(sessions: sessions, condensed: true)
 
                     NavigationLink {
                         MuscleIntelligenceScreen()
@@ -3083,8 +3086,8 @@ struct StartWorkoutView: View {
                         }
                     }
 
-                    NavigationLink {
-                        TrainingHubView()
+                    Button {
+                        showTrainingHub = true
                     } label: {
                         HStack(spacing: 12) {
                             Image(systemName: "square.stack.3d.up.fill")
@@ -3122,6 +3125,9 @@ struct StartWorkoutView: View {
             }
             .background(RFTheme.bg)
             .navigationTitle(L10n.startWorkout)
+            .sheet(isPresented: $showTrainingHub) {
+                TrainingHubView()
+            }
             .sheet(isPresented: $showTemplateEditor) {
                 TemplateEditorView()
             }
@@ -4172,6 +4178,10 @@ struct ActiveWorkoutView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: compactWorkoutMode ? 10 : 18) {
                     workoutHero
+
+                    if !compactWorkoutMode && completedEntries > 0 {
+                        LiveWorkoutHeatmap(session: session)
+                    }
 
                     if showWorkoutNote {
                         TextField(
@@ -6600,6 +6610,10 @@ struct HistoryView: View {
                 .padding(.top, 8)
 
                 if mode == 0 {
+                    WorkoutActivityHeatmap(sessions: completed, condensed: true)
+                        .padding(.horizontal)
+                        .padding(.top, 8)
+
                     filterBar
 
                     if filtered.isEmpty {
@@ -7952,6 +7966,8 @@ struct ExerciseDetailView: View {
     private var guide: some View {
         ExerciseDemoView(exercise: exercise)
 
+        ExerciseTargetHeatmap(exercise: exercise)
+
         HStack {
             Label(exercise.muscle, systemImage: "figure.strengthtraining.traditional")
             Spacer()
@@ -8759,6 +8775,8 @@ struct ProfileView: View {
             )
 
             ForgeMomentumCard(sessions: analyticsSessions)
+
+            WorkoutActivityHeatmap(sessions: analyticsSessions)
 
             MuscleIntelligencePanel(sessions: sessions)
 
