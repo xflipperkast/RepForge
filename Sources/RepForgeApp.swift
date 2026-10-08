@@ -5773,140 +5773,13 @@ struct WorkoutSetRow: View {
     let canDelete: Bool
     let onCompleted: (Bool) -> Void
     let onDelete: () -> Void
-
     @State private var showSetOptions = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Button {
-                    showSetOptions = true
-                } label: {
-                    HStack(spacing: 6) {
-                        Text(L10n.text("SET", "SET") + " \(set.order + 1)")
-                            .font(.subheadline.weight(.bold))
-                        if set.setType != "working" {
-                            Text(set.setType.uppercased())
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(RFTheme.accent)
-                        }
-                        Image(systemName: "chevron.down")
-                            .font(.caption2.weight(.bold))
-                            .foregroundStyle(RFTheme.muted)
-                    }
-                    .frame(minHeight: 44, alignment: .leading)
-                }
-                .buttonStyle(.plain)
-
-                Spacer(minLength: 3)
-
-                Menu {
-                    Button {
-                        showSetOptions = true
-                    } label: {
-                        Label(L10n.text("Set options", "Setopties"), systemImage: "slider.horizontal.3")
-                    }
-                    if canDelete {
-                        Button(role: .destructive) {
-                            onDelete()
-                        } label: {
-                            Label(L10n.text("Delete set", "Set verwijderen"), systemImage: "trash")
-                        }
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.headline)
-                        .foregroundStyle(RFTheme.muted)
-                        .frame(width: 40, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(L10n.text("More set actions", "Meer setacties"))
-
-                Button {
-                    // Finish any active number edit first so the final digit is persisted.
-                    UIApplication.shared.sendAction(
-                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
-                    )
-                    set.completed.toggle()
-                    set.completedAt = set.completed ? .now : nil
-                    if set.completed { Haptics.success() } else { Haptics.light() }
-                    try? context.save()
-                    onCompleted(set.completed)
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
-                            .font(.title3)
-                        Text(set.completed
-                             ? L10n.text("Done", "Klaar")
-                             : L10n.text("Log", "Log"))
-                            .font(.subheadline.weight(.bold))
-                    }
-                    .foregroundStyle(set.completed ? RFTheme.success : RFTheme.accent)
-                    .padding(.horizontal, 12)
-                    .frame(minHeight: 44)
-                    .background(
-                        set.completed ? RFTheme.success.opacity(0.12) : RFTheme.accent.opacity(0.12),
-                        in: RoundedRectangle(cornerRadius: 12)
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(set.completed
-                    ? L10n.text("Unmark completed set", "Voltooide set terugdraaien")
-                    : L10n.text("Complete set", "Set voltooien"))
-            }
-
-            HStack(spacing: 10) {
-                entryField(
-                    title: AppPreferences.weightLabel.uppercased(),
-                    value: Binding(
-                        get: { AppPreferences.displayWeight(set.weightKg) },
-                        set: { set.weightKg = AppPreferences.storedWeightKg($0) }
-                    ),
-                    integerOnly: false
-                )
-                entryField(
-                    title: L10n.text("REPS", "REPS"),
-                    value: Binding(
-                        get: { Double(set.reps) },
-                        set: { set.reps = max(0, Int($0.rounded())) }
-                    ),
-                    integerOnly: true
-                )
-            }
-
-            if AppPreferences.showPreviousSets, let previous {
-                HStack(spacing: 6) {
-                    Label(
-                        L10n.text("Previous", "Vorig") + ": " +
-                        AppPreferences.displayWeight(previous.0).formatted(
-                            .number.precision(.fractionLength(0...2))
-                        ) + " " + AppPreferences.weightLabel + " × \(previous.1)",
-                        systemImage: "clock.arrow.circlepath"
-                    )
-                    .font(.caption2)
-                    .foregroundStyle(RFTheme.muted)
-
-                    Spacer(minLength: 0)
-
-                    if !set.completed {
-                        Button {
-                            set.weightKg = previous.0
-                            set.reps = previous.1
-                            try? context.save()
-                            Haptics.light()
-                        } label: {
-                            Label(L10n.text("Reuse", "Herhaal"), systemImage: "arrow.down.to.line")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(RFTheme.accent)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel(
-                            L10n.text("Copy previous weight and repetitions",
-                                      "Vorig gewicht en herhalingen kopiëren")
-                        )
-                    }
-                }
-            }
+            header
+            inputs
+            previousValues
         }
         .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -5923,6 +5796,150 @@ struct WorkoutSetRow: View {
         }
     }
 
+    private var header: some View {
+        HStack(spacing: 10) {
+            Button {
+                showSetOptions = true
+            } label: {
+                HStack(spacing: 6) {
+                    Text(L10n.text("SET", "SET") + " \(set.order + 1)")
+                        .font(.subheadline.weight(.bold))
+                    if set.setType != "working" {
+                        Text(set.setType.uppercased())
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(RFTheme.accent)
+                    }
+                    Image(systemName: "chevron.down")
+                        .font(.caption2.weight(.bold))
+                        .foregroundStyle(RFTheme.muted)
+                }
+                .frame(minHeight: 44, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
+            Spacer(minLength: 3)
+            moreActions
+            completeButton
+        }
+    }
+
+    private var moreActions: some View {
+        Menu {
+            Button {
+                showSetOptions = true
+            } label: {
+                Label(L10n.text("Set options", "Setopties"), systemImage: "slider.horizontal.3")
+            }
+            if canDelete {
+                Button(role: .destructive, action: onDelete) {
+                    Label(L10n.text("Delete set", "Set verwijderen"), systemImage: "trash")
+                }
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.headline)
+                .foregroundStyle(RFTheme.muted)
+                .frame(width: 40, height: 44)
+                .contentShape(Rectangle())
+        }
+        .accessibilityLabel(L10n.text("More set actions", "Meer setacties"))
+    }
+
+    private var completeButton: some View {
+        Button(action: toggleCompleted) {
+            HStack(spacing: 6) {
+                Image(systemName: set.completed ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                Text(set.completed ? L10n.text("Done", "Klaar") : L10n.text("Log", "Log"))
+                    .font(.subheadline.weight(.bold))
+            }
+            .foregroundStyle(set.completed ? RFTheme.success : RFTheme.accent)
+            .padding(.horizontal, 12)
+            .frame(minHeight: 44)
+            .background(
+                set.completed ? RFTheme.success.opacity(0.12) : RFTheme.accent.opacity(0.12),
+                in: RoundedRectangle(cornerRadius: 12)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(set.completed
+            ? L10n.text("Unmark completed set", "Voltooide set terugdraaien")
+            : L10n.text("Complete set", "Set voltooien"))
+    }
+
+    private var inputs: some View {
+        HStack(spacing: 10) {
+            entryField(
+                title: AppPreferences.weightLabel.uppercased(),
+                value: Binding(
+                    get: { AppPreferences.displayWeight(set.weightKg) },
+                    set: { set.weightKg = AppPreferences.storedWeightKg($0) }
+                ),
+                integerOnly: false
+            )
+            entryField(
+                title: L10n.text("REPS", "REPS"),
+                value: Binding(
+                    get: { Double(set.reps) },
+                    set: { set.reps = max(0, Int($0.rounded())) }
+                ),
+                integerOnly: true
+            )
+        }
+    }
+
+    @ViewBuilder
+    private var previousValues: some View {
+        if AppPreferences.showPreviousSets, let previous {
+            HStack(spacing: 6) {
+                Label(
+                    previousLabel(weight: previous.0, reps: previous.1),
+                    systemImage: "clock.arrow.circlepath"
+                )
+                .font(.caption2)
+                .foregroundStyle(RFTheme.muted)
+
+                Spacer(minLength: 0)
+
+                if !set.completed {
+                    Button {
+                        set.weightKg = previous.0
+                        set.reps = previous.1
+                        try? context.save()
+                        Haptics.light()
+                    } label: {
+                        Label(L10n.text("Reuse", "Herhaal"), systemImage: "arrow.down.to.line")
+                            .font(.caption2.weight(.semibold))
+                            .foregroundStyle(RFTheme.accent)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text(
+                        "Copy previous weight and repetitions",
+                        "Vorig gewicht en herhalingen kopiëren"
+                    ))
+                }
+            }
+        }
+    }
+
+    private func previousLabel(weight: Double, reps: Int) -> String {
+        let display = AppPreferences.displayWeight(weight)
+            .formatted(.number.precision(.fractionLength(0...2)))
+        return L10n.text("Previous", "Vorig") + ": " +
+            display + " " + AppPreferences.weightLabel + " × \(reps)"
+    }
+
+    private func toggleCompleted() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+        )
+        set.completed.toggle()
+        set.completedAt = set.completed ? .now : nil
+        if set.completed { Haptics.success() } else { Haptics.light() }
+        try? context.save()
+        onCompleted(set.completed)
+    }
+
     private func entryField(
         title: String, value: Binding<Double>, integerOnly: Bool
     ) -> some View {
@@ -5931,7 +5948,6 @@ struct WorkoutSetRow: View {
                 .font(.system(size: 10, weight: .bold))
                 .tracking(1)
                 .foregroundStyle(RFTheme.muted)
-
             DoneNumberField(value: value, integerOnly: integerOnly, placeholder: "0")
                 .frame(height: 48)
                 .background(RFTheme.field, in: RoundedRectangle(cornerRadius: 11))
