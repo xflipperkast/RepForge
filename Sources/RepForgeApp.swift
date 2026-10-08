@@ -2714,7 +2714,7 @@ struct RepForgeApp: App {
 struct RootView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [UserProfile]
-    @State private var tab = 2
+    @State private var tab = 0
     @State private var importMessage: String?
 
     @AppStorage("appLanguage") private var appLanguage = "en"
@@ -2726,20 +2726,20 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $tab) {
-            ProfileView()
-                .tabItem { Label(L10n.profile, systemImage: "person.crop.circle.fill") }
-                .tag(0)
-            HistoryView()
-                .tabItem { Label(L10n.history, systemImage: "clock.fill") }
-                .tag(1)
             StartWorkoutView()
-                .tabItem { Label(L10n.workout, systemImage: "plus.circle.fill") }
-                .tag(2)
+                .tabItem { Label(L10n.text("Train", "Trainen"), systemImage: "bolt.fill") }
+                .tag(0)
+            TrainingHubView()
+                .tabItem { Label(L10n.text("Plans", "Schema's"), systemImage: "square.stack.3d.up.fill") }
+                .tag(1)
             ExerciseLibraryView()
                 .tabItem { Label(L10n.exercises, systemImage: "dumbbell.fill") }
+                .tag(2)
+            HistoryView()
+                .tabItem { Label(L10n.history, systemImage: "clock.arrow.circlepath") }
                 .tag(3)
-            SettingsView()
-                .tabItem { Label(L10n.settings, systemImage: "gearshape.fill") }
+            ProfileView()
+                .tabItem { Label(L10n.profile, systemImage: "person.crop.circle.fill") }
                 .tag(4)
         }
         .tint(RFTheme.accent)
@@ -2758,7 +2758,7 @@ struct RootView: View {
         }
         .onOpenURL { url in
             if url.scheme == "repforge", url.host == "workout" {
-                tab = 2
+                tab = 0
             } else {
                 importShareLink(url)
             }
@@ -2888,13 +2888,10 @@ struct StartWorkoutView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \WorkoutTemplate.createdAt, order: .reverse) private var templates: [WorkoutTemplate]
     @Query(sort: \WorkoutSession.startedAt, order: .reverse) private var sessions: [WorkoutSession]
-    @StateObject private var programStore = ProgramPlanStore()
     @State private var showTemplateEditor = false
     @State private var templateSeed: ProgramDay?
     @State private var editingTemplate: WorkoutTemplate?
-    @State private var editingProgramDay: ProgramDay?
     @State private var activeSession: WorkoutSession?
-    @State private var selectedProgramWeek = 1
     @State private var scheduleSeed: ScheduledWorkoutRecord?
     @AppStorage("activeGymID") private var activeGymID = GymProfileStore.defaultID
     @AppStorage("scheduleRevision") private var scheduleRevision = 0
@@ -2969,6 +2966,15 @@ struct StartWorkoutView: View {
                         RoundedRectangle(cornerRadius: RFLayout.cornerRadius)
                             .stroke(RFTheme.cardBorder)
                     )
+
+                    ForgeMomentumCard(sessions: sessions, condensed: true)
+
+                    NavigationLink {
+                        MuscleIntelligenceScreen()
+                    } label: {
+                        MuscleIntelligencePanel(sessions: sessions, compact: true)
+                    }
+                    .buttonStyle(.plain)
 
                     HStack {
                         Text(L10n.text("Quick Start", "Snel starten"))
@@ -3077,62 +3083,29 @@ struct StartWorkoutView: View {
                         }
                     }
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        HStack {
-                            Text("Your 3-Week Program")
-                                .font(.title2.bold())
-                            Spacer()
-                            HStack(spacing: 8) {
-                                ShareLink(
-                                    item: RepForgeShareCodec.programURL(
-                                        name: "RepForge 3-Week Program",
-                                        days: BuiltInProgram.days.map { programStore.day(for: $0) }
-                                    )
-                                ) {
-                                    Image(systemName: "square.and.arrow.up")
-                                }
-                                .buttonStyle(.bordered)
-                                .accessibilityLabel(L10n.text("Share program", "Programma delen"))
-
-                                Picker("Week", selection: $selectedProgramWeek) {
-                                    Text("W1").tag(1)
-                                    Text("W2").tag(2)
-                                    Text("W3").tag(3)
-                                }
-                                .pickerStyle(.segmented)
-                                .frame(width: 150)
+                    NavigationLink {
+                        TrainingHubView()
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "square.stack.3d.up.fill")
+                                .font(.title2)
+                                .foregroundStyle(RFTheme.accent)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(L10n.text("Explore training plans", "Bekijk trainingsschema's"))
+                                    .font(.headline)
+                                Text(L10n.text("Ready-made workouts and your personal 3-week plan",
+                                               "Kant-en-klare workouts en jouw 3-wekenplan"))
+                                    .font(.caption)
+                                    .foregroundStyle(RFTheme.muted)
                             }
+                            Spacer()
+                            Image(systemName: "arrow.up.right")
+                                .foregroundStyle(RFTheme.accent)
                         }
-
-                        ForEach(programStore.days(for: selectedProgramWeek)) { day in
-                            ProgramDayCard(
-                                day: day,
-                                isCustomized: programStore.isCustomized(day),
-                                onStart: {
-                                    activeSession = createSession(day: day)
-                                },
-                                onEdit: {
-                                    editingProgramDay = day
-                                },
-                                onSaveAsTemplate: {
-                                    templateSeed = day
-                                },
-                                onSchedule: {
-                                    scheduleSeed = ScheduledWorkoutRecord(
-                                        date: defaultScheduleDate(),
-                                        title: "\(day.title) — \(day.focus)",
-                                        exerciseIDs: day.exercises.compactMap { ExerciseCatalog.findByName($0.name)?.id },
-                                        plan: day.exercises,
-                                        gymID: activeGymID,
-                                        sourceLabel: L10n.text("Program", "Programma")
-                                    )
-                                },
-                                onReset: {
-                                    programStore.reset(day)
-                                }
-                            )
-                        }
+                        .padding(17)
+                        .background(RFTheme.surface, in: RoundedRectangle(cornerRadius: 18))
                     }
+                    .buttonStyle(.plain)
 
                     if let current = sessions.first(where: { $0.endedAt == nil }) {
                         Button {
@@ -3159,11 +3132,6 @@ struct StartWorkoutView: View {
             }
             .sheet(item: $editingTemplate) { template in
                 TemplateEditorView(template: template)
-            }
-            .sheet(item: $editingProgramDay) { day in
-                ProgramDayEditorView(day: day) { updated in
-                    programStore.save(updated)
-                }
             }
             .sheet(item: $scheduleSeed) { seed in
                 ScheduleWorkoutSheet(seed: seed) { updated in
@@ -6380,6 +6348,8 @@ struct WorkoutSummaryView: View {
                     }
                     .frame(maxWidth: .infinity)
 
+                    ForgeSessionRewards(session: session, sessions: sessions)
+
                     HStack {
                         StatCard(
                             title: L10n.text("Duration", "Duur"),
@@ -8754,6 +8724,16 @@ struct ProfileView: View {
             }
             .background(RFTheme.bg)
             .navigationTitle(L10n.profile)
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    NavigationLink {
+                        SettingsView()
+                    } label: {
+                        Image(systemName: "gearshape")
+                    }
+                    .accessibilityLabel(L10n.settings)
+                }
+            }
             .sheet(isPresented: $editing) {
                 if let profile {
                     EditProfileView(profile: profile)
@@ -8778,6 +8758,10 @@ struct ProfileView: View {
                 revision: gymRevision
             )
 
+            ForgeMomentumCard(sessions: analyticsSessions)
+
+            MuscleIntelligencePanel(sessions: sessions)
+
             ProfileStatsGrid(
                 workoutCount: completed.count,
                 totalVolume: completed.reduce(0) { $0 + $1.totalVolume },
@@ -8796,13 +8780,6 @@ struct ProfileView: View {
 
             MuscleVolumeDashboard(entries: weeklyMuscleVolume)
             MuscleRecoveryDashboard(entries: recoveryData)
-
-            if !weeklyMuscleVolume.isEmpty {
-                MuscleHeatMapView(
-                    entries: weeklyMuscleVolume,
-                    title: L10n.text("This week's muscle map", "Spierkaart van deze week")
-                )
-            }
 
             Button {
                 editing = true
