@@ -121,7 +121,7 @@ enum CoachWorkoutLibrary {
         .init("Cardio Base", category: "Conditioning", level: "Beginner", equipment: "Cardio", focus: "Low-complexity aerobic training", warmup: 5, rest: 30,
               plan: "Cycling|3|cardio|Three ~8-minute aerobic blocks"),
         .init("Cardio Mix", category: "Conditioning", level: "All levels", equipment: "Cardio", focus: "Variety across cardio equipment", warmup: 5, rest: 30,
-              plan: "Running|1|cardio|Comfortable pace; ~8 minutes;Rowing|1|cardio|Steady pace; ~8 minutes;Elliptical|1|cardio|Steady pace; ~8 minutes"),
+              plan: "Running|1|cardio|Comfortable pace, ~8 minutes;Rowing|1|cardio|Steady pace, ~8 minutes;Elliptical|1|cardio|Steady pace, ~8 minutes"),
         .init("Recovery Circuit", category: "Conditioning", level: "All levels", equipment: "Mixed", focus: "Light activity; avoid maximal loading", warmup: 3, rest: 45,
               plan: "Cycling|2|cardio|Gentle pace;Shoulder Press (Dumbbell)|2|12–15|Light and controlled;Goblet Squat|2|12–15|Comfortable range"),
         .init("Back & Posture", category: "Targeted", level: "All levels", equipment: "Mixed", focus: "Controlled pulling and rear-deltoid work", rest: 75,
@@ -339,7 +339,7 @@ struct TrainingHubView: View {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(RFTheme.accent)
 
-                    ForEach(Array(split.workouts.enumerated()), id: \.element.id) { index, workout in
+                    ForEach(Array(split.workouts.enumerated()), id: \.offset) { index, workout in
                         NavigationLink {
                             CoachWorkoutDetailView(
                                 workout: workout,
