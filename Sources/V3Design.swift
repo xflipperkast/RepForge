@@ -3,7 +3,13 @@ import SwiftUI
 // FORGE / v3: Completely independent product UI. Existing domain models, data,
 // video providers, export and workout metrics remain the compatibility boundary.
 enum V3 {
-    static var isLight: Bool { AppPreferences.appearance == "light" }
+    static var isLight: Bool {
+        switch AppPreferences.appearance {
+        case "light": return true
+        case "dark": return false
+        default: return UITraitCollection.current.userInterfaceStyle == .light
+        }
+    }
     static var accent: Color {
         AppPreferences.themePreset == "forge"
             ? Color(red: 0.37, green: 0.73, blue: 1.00)
