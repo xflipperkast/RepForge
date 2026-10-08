@@ -3425,6 +3425,10 @@ struct ProgramDayCard: View {
                     Text(day.partner.capitalized)
                         .font(.caption2)
                         .foregroundStyle(RFTheme.muted)
+
+                    Label("~\(TrainingTimeEstimator.minutes(for: day.exercises)) min", systemImage: "clock")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(RFTheme.muted)
                 }
 
                 Spacer()
@@ -3769,6 +3773,13 @@ struct TemplateCard: View {
             Text(template.name)
                 .font(.headline)
                 .lineLimit(2)
+
+            if let plan = template.plannedExercises, !plan.isEmpty {
+                Label("~\(TrainingTimeEstimator.minutes(for: plan)) min " +
+                      L10n.text("estimated", "geschat"), systemImage: "clock")
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(RFTheme.accent)
+            }
 
             VStack(alignment: .leading, spacing: 5) {
                 ForEach(Array(exerciseNames.prefix(3).enumerated()), id: \.offset) { index, name in
