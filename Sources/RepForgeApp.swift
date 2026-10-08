@@ -6096,8 +6096,10 @@ struct DoneNumberField: UIViewRepresentable {
         field.tintColor = UIColor(RFTheme.accent)
         field.placeholder = placeholder
         field.adjustsFontSizeToFitWidth = true
-        field.minimumFontSize = 12
-        field.addTarget(context.coordinator, action: #selector(Coordinator.changed(_:)), for: .editingChanged)
+        field.minimumFontSize = 13
+        field.font = .systemFont(ofSize: 18, weight: .semibold)
+        // Keep partial numeric edits in UIKit until editing ends; SwiftData writes
+        // on every keypress used to invalidate the entire active workout.
 
         let toolbar = UIToolbar()
         toolbar.sizeToFit()
@@ -6144,18 +6146,18 @@ struct DoneNumberField: UIViewRepresentable {
             self.parent = parent
         }
 
-        @objc func changed(_ sender: UITextField) {
-            let raw = sender.text ?? ""
-            let normalized = raw.replacingOccurrences(of: ",", with: ".")
-            guard !normalized.isEmpty else {
+        func textFieldDidEndEditing(_ textField: UITextField) {
+            let raw = (textField.text ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+                .replacingOccurrences(of: ",", with: ".")
+            if raw.isEmpty {
                 parent.value = 0
-                return
-            }
-
-            if parent.integerOnly {
-                parent.value = Double(Int(normalized) ?? 0)
-            } else if let parsed = Double(normalized) {
-                parent.value = max(0, parsed)
+            } else if parent.integerOnly {
+                if let parsed = Int(raw), parsed >= 0 {
+                    parent.value = Double(parsed)
+                }
+            } else if let parsed = Double(raw), parsed.isFinite, parsed >= 0 {
+                parent.value = parsed
             }
         }
 
