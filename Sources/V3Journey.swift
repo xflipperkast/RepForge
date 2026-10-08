@@ -223,6 +223,7 @@ struct V3AccountPanel: View {
     @State private var showSettings = false
     @State private var showGymManager = false
     @State private var showAdvancedProfile = false
+    @AppStorage("activeGymID") private var activeGymID = GymProfileStore.defaultID
 
     var body: some View {
         NavigationStack {
@@ -281,7 +282,7 @@ struct V3AccountPanel: View {
                 if let profile = profiles.first { BodyMeasurementEditorView(profile: profile) }
             }
             .sheet(isPresented: $showSettings) { SettingsView() }
-            .sheet(isPresented: $showGymManager) { GymManagerView() }
+            .sheet(isPresented: $showGymManager) { GymManagerView(activeGymID: $activeGymID) }
             .sheet(isPresented: $showAdvancedProfile) { ProfileView() }
         }
     }
