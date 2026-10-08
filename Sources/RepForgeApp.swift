@@ -1077,9 +1077,43 @@ Smith Machine Leg Press|Quadriceps|Machine|squat
         .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }()
 
+    // Preserve the legacy movements in the picker as well as in older workout history.
+    // The bundled video catalog is not a complete exercise catalog by itself.
+    private static let additionalMachineBuiltIn: [ExerciseDefinition] = GymMachineCatalog.variants.map { exercise in
+        guard let sourceID = exercise.sourceID,
+              let item = (try? bundledItems())?.first(where: { $0.id == sourceID }) else {
+            return exercise
+        }
+        return ExerciseDefinition(
+            id: exercise.id,
+            name: exercise.name,
+            muscle: exercise.muscle,
+            equipment: exercise.equipment,
+            movement: exercise.movement,
+            aliases: exercise.aliases + (item.aliases ?? []),
+            sourceID: sourceID,
+            sourceTarget: item.target,
+            sourceSecondaryMuscles: item.secondaryMuscles ?? [],
+            sourceBodyPart: item.bodyPart,
+            sourceSteps: item.steps ?? [],
+            sourceFormCues: item.formCues ?? []
+        )
+    }
+
+    private static func bundledItems() throws -> [ExerciseDBItem] {
+        guard let url = Bundle.main.url(forResource: "ExerciseDatabase", withExtension: "json") else {
+            return []
+        }
+        return try JSONDecoder().decode([ExerciseDBItem].self, from: Data(contentsOf: url))
+    }
+
     static var all: [ExerciseDefinition] {
-        let builtIns = databaseBuiltIn.isEmpty ? legacyBuiltIn : databaseBuiltIn
-        return builtIns + CustomExerciseStore.load().map { $0.definition }
+        let primary = databaseBuiltIn.isEmpty ? legacyBuiltIn : databaseBuiltIn
+        var names = Set(primary.map { $0.name.lowercased() })
+        let additional = (additionalMachineBuiltIn + legacyBuiltIn).filter { item in
+            names.insert(item.name.lowercased()).inserted
+        }
+        return primary + additional + CustomExerciseStore.load().map { $0.definition }
     }
 
     static func find(_ id: String) -> ExerciseDefinition? {
@@ -2363,7 +2397,9 @@ enum ExerciseMediaService {
         let items = try await ExerciseMediaCatalog.shared.exercises()
         guard !items.isEmpty else { return nil }
 
-        if noExactDemo.contains(exercise.name) {
+        if noExactDemo.contains(exercise.name) ||
+            (exercise.id.hasPrefix("gym-") && exercise.sourceID == nil) {
+            // Never substitute a similar-but-different movement's tutorial.
             return nil
         }
 
@@ -8263,8 +8299,15 @@ struct LoopingExerciseVideo: View {
         }
         .task(id: url) {
             player?.pause()
+            player = nil
+            looper = nil
 
-            let item = AVPlayerItem(url: url)
+            // Play the downloaded local MP4 on subsequent visits, including offline.
+            // Streaming remains a fallback when storage is full or downloads fail.
+            let playbackURL = (try? await ExerciseVideoCache.shared.localURL(for: url)) ?? url
+            guard !Task.isCancelled else { return }
+
+            let item = AVPlayerItem(url: playbackURL)
             let queue = AVQueuePlayer()
             queue.isMuted = true
             queue.actionAtItemEnd = .none
