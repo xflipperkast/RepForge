@@ -14,6 +14,7 @@ struct V3Studio: View {
     @State private var editingTemplate: WorkoutTemplate?
     @State private var deleteTemplate: WorkoutTemplate?
     @State private var editDay: ProgramDay?
+    @State private var pendingSchedule: ScheduledWorkoutRecord?
     @State private var showCreateTemplate = false
     @State private var showCreateExercise = false
     @State private var showAdvanced = false
@@ -64,6 +65,11 @@ struct V3Studio: View {
             }
             .sheet(item: $editDay) { day in
                 ProgramDayEditorView(day: day) { updated in personal.save(updated) }
+            }
+            .sheet(item: $pendingSchedule) { record in
+                ScheduleWorkoutSheet(seed: record) { updated in
+                    WorkoutScheduleStore.update(updated)
+                }
             }
             .sheet(isPresented: $showCreateTemplate) { TemplateEditorView() }
             .sheet(isPresented: $showCreateExercise, onDismiss: { revision += 1 }) {
@@ -299,6 +305,17 @@ struct V3Studio: View {
             V3SectionTitle(title: L10n.text("Your original plan", "Jouw bestaande schema"),
                            detail: L10n.text("Three editable weeks, independent of the new library",
                                              "Drie bewerkbare weken, los van de trainingsbibliotheek"))
+            ShareLink(item: RepForgeShareCodec.programURL(
+                name: "RepForge 3-Week Program",
+                days: BuiltInProgram.days.map { personal.day(for: $0) }
+            )) {
+                Label(L10n.text("Share program", "Deel programma"),
+                      systemImage: "square.and.arrow.up")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(V3.accent)
+                    .frame(minHeight: 44)
+            }
+
             Picker("Week", selection: $week) {
                 ForEach(1...3, id: \.self) { i in Text("W\(i)").tag(i) }
             }
@@ -325,6 +342,32 @@ struct V3Studio: View {
                                 if let session { onStart(session) }
                             }
                         }
+                        HStack {
+                            Button {
+                                pendingSchedule = ScheduledWorkoutRecord(
+                                    date: Calendar.current.date(byAdding: .day, value: 1, to: .now) ?? .now,
+                                    title: day.title + " — " + day.focus,
+                                    exerciseIDs: day.exercises.compactMap { ExerciseCatalog.findByName($0.name)?.id },
+                                    plan: day.exercises,
+                                    gymID: gymID,
+                                    sourceLabel: "3-week plan"
+                                )
+                            } label: {
+                                Label(L10n.text("Schedule", "Plannen"), systemImage: "calendar.badge.plus")
+                                    .frame(minHeight: 44)
+                            }
+                            Spacer()
+                            if personal.isCustomized(day) {
+                                Button(role: .destructive) {
+                                    personal.reset(day)
+                                } label: {
+                                    Label(L10n.text("Reset changes", "Herstel wijzigingen"),
+                                          systemImage: "arrow.uturn.backward")
+                                        .frame(minHeight: 44)
+                                }
+                            }
+                        }
+                        .font(.caption.weight(.semibold))
                     }
                 }
             }
