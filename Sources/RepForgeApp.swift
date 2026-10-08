@@ -2734,39 +2734,8 @@ struct RootView: View {
     @AppStorage("measurementSystem") private var measurementSystem = "metric"
 
     var body: some View {
-        ZStack {
-            Group {
-                switch tab {
-                case 1:
-                    NextProgramsView()
-                case 2:
-                    NextExploreView()
-                case 3:
-                    NextProgressView()
-                case 4:
-                    NextAthleteView()
-                default:
-                    NextTodayView()
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !keyboardVisible {
-                NextNavigation(selection: $tab)
-            }
-        }
-        .onReceive(NotificationCenter.default.publisher(
-            for: UIResponder.keyboardWillShowNotification
-        )) { _ in
-            keyboardVisible = true
-        }
-        .onReceive(NotificationCenter.default.publisher(
-            for: UIResponder.keyboardWillHideNotification
-        )) { _ in
-            keyboardVisible = false
-        }
-        .tint(NextStyle.electric)
+        V3Shell(selectedTab: $tab)
+        .tint(V3.accent)
         .preferredColorScheme(preferredColorScheme)
         .dynamicTypeSize(preferredTextSize)
         .id("\(appLanguage)-\(appearance)-\(themePreset)-\(textSize)-\(measurementSystem)-\(layoutStyle)")
